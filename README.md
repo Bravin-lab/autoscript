@@ -90,21 +90,23 @@
 apt update && apt upgrade -y && reboot
 ```
 - Step 2 for (ubuntu) directly install
+
 ```
-sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.disable_ipv6=1 && apt update && apt install -y bzip2 gzip coreutils screen curl unzip && wget https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/setup1.sh && chmod +x setup1.sh && sed -i -e 's/\r$//' setup1.sh && screen -S setup ./setup1.sh
+sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -w net.ipv6.conf.default.disable_ipv6=1 && apt update && apt install -y bzip2 gzip coreutils screen curl unzip && wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/setup1.sh && chmod +x setup1.sh && sed -i -e 's/\r$//' setup1.sh && screen -S setup ./setup1.sh
 ```
+
 
 # Telegram
-[![Telegram-chat](https://img.shields.io/badge/Chat-Telegram-blue)](https://t.me/networktweakerop/)
-[![Telegram-grup](https://img.shields.io/badge/Grup-Telegram-blue)](https://t.me/+t1MGUMC6GsZhNWFl/)
+[![Telegram-chat](https://img.shields.io/badge/Chat-Telegram-blue)](https://t.me/bravin_lab)
+
 
 # ATTENTION (MUST READ) CAREFULLY
-- PROHIBITED FOR SALE BECAUSE I GET FREE FROM THE INTERNET
+- PROHIBITED FOR SALE. THIS SCRIPT IS FOR PERSONAL USE ONLY BY BRAVIN.
 - DATA SECURITY / YOUR USE HISTORY ON THE INTERNET IS NOT MY RESPONSIBILITY AS A SCRIPT PROVIDER
 - ALL YOUR DATA / USAGE HISTORY ON THE INTERNET ONLY VPS NETWORK PROVIDERS MANAGE IT AND (FBI) maybe
 - USE IT WISELY THEN YOU WILL AVOID PROBLEMS
 - WATCHING ADULT FILM IS YOUR OWN RESPONSIBILITY
 
+
 # FINAL MESSAGE
-- THANK YOU FOR TAKING THE TIME TO READ AND SORRY IF THERE ARE IMPACT WORDS
-- BECAUSE I AM ALSO A HUMAN WHO DOESN'T ESCAPE FROM MISTAKES
+- THANK YOU FOR USING BRAVIN AUTOSCRIPT. FOR SUPPORT OR QUESTIONS, CONTACT @bravin_lab ON TELEGRAM.
