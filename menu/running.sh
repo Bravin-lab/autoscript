@@ -1,5 +1,5 @@
 #!/bin/bash
-# NETWORK TWEAKER 
+# BRAVIN 
 # CYBER NOVA 
 # EREN YEAGER 
 # fn ki maa ka bhosda 
@@ -198,7 +198,7 @@ kernelku=$(uname -r)
 
 # DNS PATCH
 #tipeos2=$(uname -m)
-Name=$"NETWORK TWEAKER"
+Name=$"BRAVIN"
 Exp=$"NONE"
 # GETTING DOMAIN NAME
 Domen="$(cat /etc/xray/domain)"

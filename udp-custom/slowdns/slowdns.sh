@@ -1,7 +1,7 @@
 # =========================================
 # Quick Setup | Script Setup Manager
 # Edition : Stable Edition 1.0
-# Auther  : NETWORK TWEAKER 
+# Auther  : BRAVIN 
 # CYBER NOVA & EREN YEAGER 
 # (C) Copyright 2023
 # =========================================

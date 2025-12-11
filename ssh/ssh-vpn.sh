@@ -235,12 +235,12 @@ socket = a:SO_REUSEADDR=1
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 
-[dropbear]
-accept = 222
+[ssh-ssl]
+accept = 443
 connect = 127.0.0.1:22
 
-[dropbear]
-accept = 777
+[dropbear-ssl]
+accept = 444
 connect = 127.0.0.1:109
 
 [ws-stunnel]
@@ -250,7 +250,6 @@ connect = 700
 [openvpn]
 accept = 442
 connect = 127.0.0.1:1194
-
 END
 
 # make a certificate

@@ -57,24 +57,20 @@ show_menu() {
     show_vps_info
     show_cpu_ram_info
 
-    echo -e "\e[1;34m                      NT MENU                       \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e ""
-    echo -e "\e[1;36m 1 \e[0m: Menu SSH"
-    echo -e "\e[1;36m 2 \e[0m: Menu Vmess"
-    echo -e "\e[1;36m 3 \e[0m: Menu Trojan"
-    echo -e "\e[1;36m 4 \e[0m: Menu Shadowsocks"
-    echo -e "\e[1;36m 5 \e[0m: Menu Setting"
-    echo -e "\e[1;36m 6 \e[0m: Status Service"
-    echo -e "\e[1;36m 7 \e[0m: Clear RAM Cache"
-    echo -e "\e[1;36m 8 \e[0m: Reboot VPS"
-    echo -e "\e[1;36m x \e[0m: Exit Script"
-    echo -e ""
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
+    echo -e "\e[1;34m                  ┏━━━━━━━━━━━━━━━━━━━━━━━┓                  \e[0m"
+    echo -e "\e[1;34m                  ┃      MAIN  MENU       ┃                  \e[0m"
+    echo -e "\e[1;34m                  ┗━━━━━━━━━━━━━━━━━━━━━━━┛                  \e[0m"
+    echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo -e "\e[1;36m┃  [1] Menu SSH           ┃  [5] Menu Setting     ┃\e[0m"
+    echo -e "\e[1;36m┃  [2] Menu Vmess         ┃  [6] Status Service   ┃\e[0m"
+    echo -e "\e[1;36m┃  [3] Menu Trojan        ┃  [7] Clear RAM Cache  ┃\e[0m"
+    echo -e "\e[1;36m┃  [4] Menu Shadowsocks   ┃  [8] Reboot VPS       ┃\e[0m"
+    echo -e "\e[1;36m┃  [x] Exit Script        ┃                      ┃\e[0m"
+    echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
     echo -e "\e[1;32m Client Name \e[0m: $Name"
     echo -e "\e[1;32m Expired     \e[0m: $Exp2"
-    echo -e "\e[1;32m SCRIPT BY   \e[0m: NETWORK TWEAKER"
-    echo -e "\e[1;32m MADE BY     \e[0m: CYBER NOVA AND EREN YEAGER"
+    echo -e "\e[1;32m POWERED BY  \e[0m: BRAVIN"
+    echo -e "\e[1;32m MADE BY     \e[0m: BRAVIN"
     echo -e "\e[1;33m -------------------------------------------------\e[0m"
     echo -e ""
     read -p " Select menu :  " opt
@@ -96,7 +92,7 @@ show_menu() {
 # Initial setup
 domain=$(cat /etc/xray/domain)
 Exp2="NONE"
-Name="NETWORK TWEAKER"
+Name="BRAVIN"
 
 # Main loop to display menu continuously
 while true; do

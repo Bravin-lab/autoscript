@@ -19,6 +19,7 @@ echo -e ADMIN='"'$admin'"' >> /root/xolpanel/var.txt
 echo -e DOMAIN='"'$domain'"' >> /root/xolpanel/var.txt
 clear
 echo "Done Script By NETWORK TWEAKER"
+echo "Done Script By BRAVIN"
 echo "Your Data Bot"
 echo -e "==============================="
 echo "Bot Token     : $bottoken"

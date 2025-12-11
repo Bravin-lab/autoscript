@@ -8,7 +8,7 @@ export PATH
 #	Version: 1.4.0
 #	Author: NETWORK 
 #	Channel: https://t.me/networktweakerop
-#       translation into english by NETWORK TWEAKER 
+#       translation into english by BRAVIN 
 #=================================================
 
 sh_ver="1.4.0"

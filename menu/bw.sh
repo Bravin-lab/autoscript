@@ -1,5 +1,5 @@
 #!/bin/bash
-# NETWORK TWEAKER 
+# BRAVIN 
 BGreen='\e[1;32m'
 BYellow='\e[1;33m'
 BBlue='\e[1;34m'

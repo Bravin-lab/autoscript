@@ -1,10 +1,10 @@
 #!/bin/bash
 # Script UdpCustom 2023
-# Script By NETWORK TWEAKER 
+# Script By BRAVIN 
 # =========================================
 # Quick Setup | Script Setup Manager
 # Edition : Stable Edition 1.0
-# Auther  : NETWORK TWEAKER 
+# Auther  : BRAVIN 
 # EREN YEAGER AND CYBER NOVA 
 # (C) Copyright 2023
 # =========================================
@@ -73,7 +73,7 @@ chmod 644 /root/udp/config.json
 if [ -z "$1" ]; then
 cat <<EOF > /etc/systemd/system/udp-custom.service
 [Unit]
-Description=UDP Custom by NETWORK TWEAKER 
+Description=UDP Custom by BRAVIN 
 
 [Service]
 User=root

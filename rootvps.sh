@@ -1,4 +1,4 @@
-# by NETWORK TWEAKER 
+# by BRAVIN 
 # ipinfo
 MYIP=$(wget -qO- ifconfig.me);
 # pewarna hidup

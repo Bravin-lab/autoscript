@@ -1,5 +1,5 @@
 #!/bin/bash
-# NETWORK TWEAKER 
+# BRAVIN 
 BGreen='\e[1;32m'
 NC='\e[0m'
 clear
