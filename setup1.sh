@@ -46,7 +46,7 @@ echo "2. Choose Your Own Domain"
 read -rp "Input 1 or 2: " dns
 if [ "$dns" -eq 1 ]; then
     # Download cf script and convert line endings
-    wget https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/ssh/cf
+    wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/cf
     dos2unix cf
     bash cf
 elif [ "$dns" -eq 2 ]; then
@@ -63,15 +63,15 @@ else
 fi
 
 # Install services
-wget -q https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/ssh/ssh-vpn.sh
+wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/ssh-vpn.sh
 dos2unix ssh-vpn.sh
 bash ssh-vpn.sh
 
-wget -q https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/xray/ins-xray.sh
+wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/xray/ins-xray.sh
 dos2unix ins-xray.sh
 bash ins-xray.sh
 
-wget -q https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/sshws/insshws.sh
+wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/sshws/insshws.sh
 dos2unix insshws.sh
 bash insshws.sh
 
@@ -113,7 +113,7 @@ echo " - Vless gRPC: 443"
 echo " - Trojan gRPC: 443"
 echo " - Shadowsocks gRPC: 443"
 echo "=================================================================="
-echo "Contact: t.me/networktweakerop"
+echo "Contact: t.me/Bravi_n"
 echo "=================================================================="
 
 # Additional commands
