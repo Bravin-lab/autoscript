@@ -26,7 +26,7 @@
 - (Recommendation) Ubuntu 18 / 20 LTS (STABLE to use)
 <br>
 
-# Cloudflare settings for those who have their own Domain, you can check at folder [image](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/tree/master/image) to display other settings
+# Cloudflare settings for those who have their own Domain, you can check at folder [image](https://github.com/Bravin-lab/autoscript/tree/master/image) to display other settings
 <br>
 - SSL/TLS : FULL<br>
 - SSL/TLS Recommender : OFF<br>
@@ -37,7 +37,7 @@
 <br>
 
 # Pointing
-![Pointing](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/blob/master/image/pointing.png)
+![Pointing](https://github.com/Bravin-lab/autoscript/blob/master/image/pointing.png)
 
 ## Service & Port:
 <br>
@@ -74,15 +74,15 @@
 - no auto backup? which... is permanently removed
 - Just accept the existing features / you can add them yourself manually
 - Additional Features (Optional) skipper (NOTE) install after [Step Install] is complete
-- Optional [install OpenVPN + Slowdns +](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/tree/master/udp-custom) UDP-Custom by [Exe302](https://gitlab.com/Exe302) + Slowdns by [SL](https://github.com/fisabiliyusri)
-- Optional [install Panel Webmin + ADS Block](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/tree/master/helium) Helium version 3.0 by [Abi Darwish](https://github.com/abidarwish)
-- Optional [install Bot Telegram Xolpanel](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/tree/master/bot%20telegram%20panel) by [XolvaID](https://github.com/XolvaID)
+- Optional [install OpenVPN + Slowdns +](https://github.com/Bravin-lab/autoscript/tree/master/udp-custom) UDP-Custom by [Exe302](https://gitlab.com/Exe302) + Slowdns by [SL](https://github.com/fisabiliyusri)
+- Optional [install Panel Webmin + ADS Block](https://github.com/Bravin-lab/autoscript/tree/master/helium) Helium version 3.0 by [Abi Darwish](https://github.com/abidarwish)
+- Optional [install Bot Telegram Xolpanel](https://github.com/Bravin-lab/autoscript/tree/master/bot%20telegram%20panel) by [XolvaID](https://github.com/XolvaID)
   
 # Menu
-![Service Status](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/blob/master/image/menu1.png)
+![Service Status](https://github.com/Bravin-lab/autoscript/blob/master/image/menu1.png)
 
 # Service Status
-![Service Status](https://github.com/NETWORKTWEAKER/AUTO-SCRIPT/blob/master/image/service1.png)
+![Service Status](https://github.com/Bravin-lab/autoscript/blob/master/image/service1.png)
 
 # [Step Install]
 - Step 1 for (debian) please update first

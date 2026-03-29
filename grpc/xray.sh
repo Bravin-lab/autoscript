@@ -38,8 +38,8 @@ chmod +x /usr/local/bin/xray
 # Make Folder XRay
 mkdir -p /var/log/xray/
 #
-wget -q -O /usr/local/bin/geosite.dat "https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/grpc/menu/geosite.dat"
-wget -q -O /usr/local/bin/geoip.dat "https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/AutoScriptXray/grpc/ma/geoip.dat"
+wget -q -O /usr/local/bin/geosite.dat "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/grpc/menu/geosite.dat"
+wget -q -O /usr/local/bin/geoip.dat "https://raw.githubusercontent.com/Bravin-lab/autoscript/AutoScriptXray/grpc/ma/geoip.dat"
 
 #
 cat > /etc/xray/vmessgrpc.json << END
@@ -316,10 +316,10 @@ systemctl enable vless-grpc
 systemctl restart vless-grpc
 #
 cd /usr/bin
-wget -O addgrpc "https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/grpc/addgrpc.sh"
-wget -O delgrpc "https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/grpc/delgrpc.sh"
-wget -O renewgrpc "https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/grpc/renewgrpc.sh"
-wget -O cekgrpc "https://raw.githubusercontent.com/NETWORKTWEAKER/AUTO-SCRIPT/master/grpc/cekgrpc.sh"
+wget -O addgrpc "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/grpc/addgrpc.sh"
+wget -O delgrpc "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/grpc/delgrpc.sh"
+wget -O renewgrpc "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/grpc/renewgrpc.sh"
+wget -O cekgrpc "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/grpc/cekgrpc.sh"
 
 chmod +x addgrpc
 chmod +x delgrpc
