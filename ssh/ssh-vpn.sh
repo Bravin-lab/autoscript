@@ -236,7 +236,7 @@ socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 
 [ssh-ssl]
-accept = 443
+accept = 445
 connect = 127.0.0.1:22
 
 [dropbear-ssl]

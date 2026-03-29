@@ -67,7 +67,7 @@ echo -e "SSH SSL WS  : $wsssl" | tee -a /etc/log-create-ssh.log
 echo -e "SSL/TLS     :$ssl" | tee -a /etc/log-create-ssh.log
 echo -e "UDPGW       : 7100-7900" | tee -a /etc/log-create-ssh.log
 echo -e "UDP Custom  : 1-65350" | tee -a /etc/log-create-ssh.log
-echo -e "Port NS     : ALL Port (22, 443, 143)" | tee -a /etc/log-create-ssh.log
+echo -e "Port NS     : ALL Port (22, 445, 143)" | tee -a /etc/log-create-ssh.log
 echo -e "Nameserver  : $sldomain" | tee -a /etc/log-create-ssh.log
 echo -e "Pubkey      : $slkey" | tee -a /etc/log-create-ssh.log
 echo -e "Squid Proxy :$sqd" | tee -a /etc/log-create-ssh.log
@@ -111,7 +111,7 @@ echo -e "SSH SSL WS  : $wsssl" | tee -a /etc/log-create-ssh.log
 echo -e "SSL/TLS     :$ssl" | tee -a /etc/log-create-ssh.log
 echo -e "UDPGW       : 7100-7900" | tee -a /etc/log-create-ssh.log
 echo -e "UDP Custom  : 1-65350" | tee -a /etc/log-create-ssh.log
-echo -e "Port NS     : ALL Port (22, 443, 143)" | tee -a /etc/log-create-ssh.log
+echo -e "Port NS     : ALL Port (22, 445, 143)" | tee -a /etc/log-create-ssh.log
 echo -e "Nameserver  : $sldomain" | tee -a /etc/log-create-ssh.log
 echo -e "Pubkey      : $slkey" | tee -a /etc/log-create-ssh.log
 echo -e "Squid Proxy :$sqd" | tee -a /etc/log-create-ssh.log
