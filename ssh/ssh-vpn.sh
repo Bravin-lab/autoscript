@@ -237,11 +237,11 @@ socket = r:TCP_NODELAY=1
 
 [ssh-ssl]
 accept = 222
-connect = 127.0.0.1:109
+connect = 127.0.0.1:69
 
 [ssh-ssl-777]
 accept = 777
-connect = 127.0.0.1:109
+connect = 127.0.0.1:69
 
 [dropbear-ssl]
 accept = 444
