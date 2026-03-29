@@ -43,7 +43,7 @@
 <br>
 - OpenSSH                  : 22<br>
 - OpenSSH(JIO5G NO PAYLOAD): 53<br>
-- SSH Websocket            : 80<br>
+- SSH Websocket            : 80, 8080, 8880<br>
 - SSH SSL Websocket        : 445<br>
 - Stunnel4                 : 222, 777<br>
 - Dropbear                 : 109, 143<br>

@@ -74,7 +74,7 @@ echo "   >>> Service & Port"  | tee -a log-install.txt
 echo "   - OpenSSH                  : 22"  | tee -a log-install.txt
 echo "   - OpenVPN                  : 1194"  | tee -a log-install.txt
 echo "   - Squid Proxy              : 3128, 8000"  | tee -a log-install.txt
-echo "   - SSH Websocket            : 80" | tee -a log-install.txt
+echo "   - SSH Websocket            : 80, 8080, 8880" | tee -a log-install.txt
 echo "   - SSH SSL Websocket        : 445" | tee -a log-install.txt
 echo "   - Stunnel4                 : 222, 777" | tee -a log-install.txt
 echo "   - Dropbear                 : 109, 143" | tee -a log-install.txt
