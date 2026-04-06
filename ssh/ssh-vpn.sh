@@ -156,6 +156,59 @@ install_ssl(){
     fi
 }
 
+enable_shared_443(){
+        echo "=== Enable Shared 443 (Nginx + stunnel) ==="
+
+        apt install -y libnginx-mod-stream || true
+
+        if ! grep -q '^include /etc/nginx/modules-enabled/\*\.conf;' /etc/nginx/nginx.conf; then
+                sed -i '1i include /etc/nginx/modules-enabled/*.conf;' /etc/nginx/nginx.conf
+        fi
+
+        if ! grep -q '^\s*include /etc/nginx/stream-conf\.d/\*\.conf;' /etc/nginx/nginx.conf; then
+                cat >> /etc/nginx/nginx.conf <<-END
+
+stream {
+        include /etc/nginx/stream-conf.d/*.conf;
+}
+END
+        fi
+
+        mkdir -p /etc/nginx/stream-conf.d
+        cat > /etc/nginx/stream-conf.d/shared-443.conf <<-END
+map \$ssl_preread_alpn_protocols \$shared443_upstream {
+        ~\\bh2\\b         127.0.0.1:8443;
+        ~\\bhttp/1.1\\b   127.0.0.1:8443;
+        default          127.0.0.1:7443;
+}
+
+server {
+        listen 443 reuseport;
+        proxy_pass \$shared443_upstream;
+        ssl_preread on;
+}
+END
+
+        find /etc/nginx/conf.d /etc/nginx/sites-enabled /etc/nginx/sites-available \
+                -type f -name '*.conf' 2>/dev/null | while read -r conf_file; do
+                sed -ri 's/listen[[:space:]]+443[[:space:]]+ssl/listen 8443 ssl/g' "$conf_file"
+                sed -ri 's/listen[[:space:]]+\[::\]:443[[:space:]]+ssl/listen [::]:8443 ssl/g' "$conf_file"
+        done
+
+        if ! grep -q '^\[ssh-ssl-443\]' /etc/stunnel/stunnel.conf; then
+                cat >> /etc/stunnel/stunnel.conf <<-END
+
+[ssh-ssl-443]
+accept = 127.0.0.1:7443
+connect = 127.0.0.1:69
+END
+        fi
+
+        nginx -t
+        systemctl restart stunnel4 || true
+        systemctl restart nginx
+}
+
 # install webserver
 apt -y install nginx
 cd
@@ -267,6 +320,9 @@ sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 /lib/systemd/systemd-sysv-install enable stunnel4
 systemctl start stunnel4
 /etc/init.d/stunnel4 restart
+
+# share port 443 between nginx websocket and stunnel
+enable_shared_443
 
 
 # install fail2ban
