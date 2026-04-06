@@ -6,9 +6,9 @@ export PATH
 #	System Required: CentOS 6/7,Debian 8/9,Ubuntu 16+
 #	Description: BBR+BBRmagic version+BBRplus+Lotserver
 #	Version: 1.4.0
-#	Author: NETWORK 
-#	Channel: https://t.me/networktweakerop
-#       translation into english by BRAVIN 
+#	Author: Bravin 
+#	Channel: https://t.me/Bravi_n
+#       made by BRAVIN 
 #=================================================
 
 sh_ver="1.4.0"
