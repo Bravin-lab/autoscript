@@ -1,133 +1,136 @@
 #!/bin/bash
+set -euo pipefail
 
-# Ensure the script is run as root
-if [ "${EUID}" -ne 0 ]; then
-    echo "You need to run this script as root"
-    sleep 5
-    exit 1
+# Secure public bootstrap loader.
+# Public repo holds only this loader; real installer is delivered from your private backend.
+
+AUTH_API_URL="${AUTH_API_URL:-https://auth.example.workers.dev/v1/bootstrap/authorize}"
+LICENSE_KEY="${LICENSE_KEY:-}"
+PUBLIC_KEY_PEM_B64="${PUBLIC_KEY_PEM_B64:-}"
+PUBLIC_KEY_URL="${PUBLIC_KEY_URL:-}"
+SERVER_IP=""
+HWID=""
+WORK_DIR="$(mktemp -d /tmp/autoscript-bootstrap.XXXXXX)"
+PAYLOAD_FILE="${WORK_DIR}/payload.sh"
+SIG_FILE="${WORK_DIR}/payload.sig"
+PUBKEY_FILE="${WORK_DIR}/pubkey.pem"
+
+trap 'rm -rf "${WORK_DIR}"' EXIT
+
+# Replace this with your real RSA public key for payload signature verification.
+# You can also inject key without editing this file by using either:
+# - PUBLIC_KEY_PEM_B64=<base64 PEM>
+# - PUBLIC_KEY_URL=https://.../public.pem
+read -r -d '' DEFAULT_PUBLIC_KEY_PEM <<'KEYEOF' || true
+-----BEGIN PUBLIC KEY-----
+REPLACE_WITH_YOUR_RSA_PUBLIC_KEY
+-----END PUBLIC KEY-----
+KEYEOF
+
+fail() {
+  echo "[ERROR] $*"
+  exit 1
+}
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+}
+
+json_get_string() {
+  # Lightweight JSON string extractor for flat key/value responses.
+  # Expected format: "key":"value"
+  local key="$1"
+  sed -n "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n1
+}
+
+need_cmd curl
+need_cmd awk
+need_cmd sed
+need_cmd openssl
+need_cmd sha256sum
+need_cmd base64
+need_cmd mktemp
+need_cmd bash
+
+if [[ "${EUID}" -ne 0 ]]; then
+  fail "Run as root."
 fi
 
-# Check virtualization
-if [ "$(systemd-detect-virt)" == "openvz" ]; then
-    echo "OpenVZ is not supported"
-    sleep 5
-    exit 1
+if [[ "$(systemd-detect-virt 2>/dev/null || true)" == "openvz" ]]; then
+  fail "OpenVZ is not supported."
 fi
 
-# Create necessary directories and files
-mkdir -p /etc/xray /etc/v2ray
-touch /etc/xray/domain /etc/v2ray/domain /etc/xray/scdomain /etc/v2ray/scdomain
+SERVER_IP="$(curl -4fsS https://ipv4.icanhazip.com 2>/dev/null || curl -4fsS https://api.ipify.org 2>/dev/null || true)"
+SERVER_IP="$(echo "${SERVER_IP}" | tr -d '[:space:]')"
+[[ -n "${SERVER_IP}" ]] || fail "Unable to detect public IPv4."
 
-# Update and install required packages
-apt-get update
-apt-get install -y software-properties-common build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev git dos2unix
-
-# Download and install Python 2.7 from source
-cd /usr/src
-wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
-tar xzf Python-2.7.18.tgz
-cd Python-2.7.18
-./configure --enable-optimizations
-make altinstall
-
-# Ensure python2.7 is the command for Python 2.7
-update-alternatives --install /usr/bin/python python /usr/local/bin/python2.7 1
-update-alternatives --set python /usr/local/bin/python2.7
-
-# Check that 'python' command works and points to Python 2.7
-if ! python --version 2>&1 | grep -q "Python 2.7"; then
-    echo "Failed to set python to Python 2.7"
-    exit 1
-fi
-
-# Domain configuration
-echo "1. Use Our NT Domain Random"
-echo "2. Choose Your Own Domain"
-read -rp "Input 1 or 2: " dns
-if [ "$dns" -eq 1 ]; then
-    # Download cf script and convert line endings
-    wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/cf
-    dos2unix cf
-    bash cf
-elif [ "$dns" -eq 2 ]; then
-    read -rp "Enter Your Domain: " dom
-    echo "$dom" > /var/lib/ipvps.conf
-    echo "$dom" > /root/scdomain
-    echo "$dom" > /etc/xray/scdomain
-    echo "$dom" > /etc/xray/domain
-    echo "$dom" > /etc/v2ray/domain
-    echo "$dom" > /root/domain
+if [[ -f /etc/machine-id ]]; then
+  HWID="$(cat /etc/machine-id)"
 else
-    echo "Not Found Argument"
-    exit 1
+  HWID="$(hostname)"
 fi
 
-# Install services
-wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/ssh-vpn.sh
-dos2unix ssh-vpn.sh
-bash ssh-vpn.sh
+if [[ -z "${LICENSE_KEY}" ]]; then
+  read -r -p "Enter license key: " LICENSE_KEY
+fi
+[[ -n "${LICENSE_KEY}" ]] || fail "License key is required."
 
-wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/xray/ins-xray.sh
-dos2unix ins-xray.sh
-bash ins-xray.sh
+if [[ "${AUTH_API_URL}" == "https://auth.example.workers.dev/v1/bootstrap/authorize" ]]; then
+  fail "Set AUTH_API_URL to your deployed Worker endpoint before use."
+fi
 
-wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/sshws/insshws.sh
-dos2unix insshws.sh
-bash insshws.sh
+RESOLVED_PUBLIC_KEY_PEM="${DEFAULT_PUBLIC_KEY_PEM}"
+if [[ -n "${PUBLIC_KEY_PEM_B64}" ]]; then
+  RESOLVED_PUBLIC_KEY_PEM="$(echo "${PUBLIC_KEY_PEM_B64}" | base64 -d 2>/dev/null || true)"
+  [[ -n "${RESOLVED_PUBLIC_KEY_PEM}" ]] || fail "PUBLIC_KEY_PEM_B64 is invalid base64 or empty."
+elif [[ -n "${PUBLIC_KEY_URL}" ]]; then
+  RESOLVED_PUBLIC_KEY_PEM="$(curl -fsSL "${PUBLIC_KEY_URL}" 2>/dev/null || wget -qO- "${PUBLIC_KEY_URL}" 2>/dev/null || true)"
+  [[ -n "${RESOLVED_PUBLIC_KEY_PEM}" ]] || fail "Failed to download public key from PUBLIC_KEY_URL."
+fi
 
-# Setup environment for auto-reboot
-ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-sysctl -w net.ipv6.conf.all.disable_ipv6=1
-sysctl -w net.ipv6.conf.default.disable_ipv6=1
+if echo "${RESOLVED_PUBLIC_KEY_PEM}" | grep -q "REPLACE_WITH_YOUR_RSA_PUBLIC_KEY"; then
+  fail "Replace embedded public key with your real RSA public key."
+fi
 
-# Log setup
-mkdir -p /var/lib/
-echo "IP=" >> /var/lib/ipvps.conf
+if ! echo "${RESOLVED_PUBLIC_KEY_PEM}" | grep -q "BEGIN PUBLIC KEY"; then
+  fail "Resolved public key is invalid (missing BEGIN PUBLIC KEY)."
+fi
 
-# Installation summary
-echo "===================================="
-echo " _   _ _______     ______  _   _ "
-echo "| \ | |_   _\ \   / /  _ \| \ | |"
-echo "|  \| | | |  \ \ / /| |_) |  \| |"
-echo "| |\  | | |   \ V / |  __/| |\  |"
-echo "|_| \_| |_|    \_/  |_|   |_| \_|"
-echo "===================================="        
-echo "Services and Ports:"
-echo " - OpenSSH: 22"
-echo " - SSH Websocket: 80"
-echo " - SSH SSL Websocket: 443"
-echo " - Stunnel4: 222, 777"
-echo " - Dropbear: 109, 143"
-echo " - Badvpn: 7100-7900"
-echo " - Nginx: 81"
-echo " - Vmess WS TLS: 443"
-echo " - Vless WS TLS: 443"
-echo " - Trojan WS TLS: 443"
-echo " - Shadowsocks WS TLS: 443"
-echo " - Vmess WS none TLS: 80"
-echo " - Vless WS none TLS: 80"
-echo " - Trojan WS none TLS: 80"
-echo " - Shadowsocks WS none TLS: 80"
-echo " - Vmess gRPC: 443"
-echo " - Vless gRPC: 443"
-echo " - Trojan gRPC: 443"
-echo " - Shadowsocks gRPC: 443"
-echo "=================================================================="
-echo "Contact: t.me/networktweakerop"
-echo "=================================================================="
+echo "[INFO] Requesting install authorization..."
+AUTH_JSON="$(curl -fsS -X POST "${AUTH_API_URL}" \
+  -H 'Content-Type: application/json' \
+  -d "{\"license_key\":\"${LICENSE_KEY}\",\"ip\":\"${SERVER_IP}\",\"hwid\":\"${HWID}\"}")" \
+  || fail "Authorization request failed."
 
-# Additional commands
-bash <(curl -Ls https://raw.githubusercontent.com/lalfulsk/Auto/main/dnsdisable.sh)
-wget -O /root/log-install.txt https://github.com/NETWORKTWEAKER/SCRIPTS/raw/main/log-install.txt
-bash <(curl -Ls https://raw.githubusercontent.com/lalfulsk/NT-A.I.O/main/dropbearconfig.sh)
-bash <(curl -Ls https://github.com/lalfulsk/NT-A.I.O/raw/main/dropbear.sh)
-bash <(curl -Ls https://github.com/NETWORKTWEAKER/SCRIPTS/raw/main/swap.sh)
-sudo systemctl start dropbear
-sudo systemctl enable dropbear
-# Cleanup and reboot
-rm -f /root/setup.sh /root/ins-xray.sh /root/insshws.sh cf ssh-vpn.sh ins-xray.sh insshws.sh
-echo "Auto reboot in 40 seconds..."
-sleep 40
+STATUS="$(echo "${AUTH_JSON}" | json_get_string status)"
+if [[ "${STATUS}" != "ok" ]]; then
+  MESSAGE="$(echo "${AUTH_JSON}" | json_get_string message)"
+  [[ -n "${MESSAGE}" ]] || MESSAGE="Not authorized"
+  fail "${MESSAGE}"
+fi
 
-# Reboot
-reboot
+PAYLOAD_URL="$(echo "${AUTH_JSON}" | json_get_string payload_url)"
+PAYLOAD_SHA256="$(echo "${AUTH_JSON}" | json_get_string payload_sha256)"
+PAYLOAD_SIG_B64="$(echo "${AUTH_JSON}" | json_get_string payload_sig_b64)"
+
+[[ -n "${PAYLOAD_URL}" ]] || fail "Missing payload_url in API response."
+[[ -n "${PAYLOAD_SHA256}" ]] || fail "Missing payload_sha256 in API response."
+[[ -n "${PAYLOAD_SIG_B64}" ]] || fail "Missing payload_sig_b64 in API response."
+
+echo "[INFO] Downloading protected installer payload..."
+curl -fsSLo "${PAYLOAD_FILE}" "${PAYLOAD_URL}" || fail "Payload download failed."
+
+CALC_SHA256="$(sha256sum "${PAYLOAD_FILE}" | awk '{print $1}')"
+if [[ "${CALC_SHA256}" != "${PAYLOAD_SHA256}" ]]; then
+  fail "Payload checksum verification failed."
+fi
+
+echo "${PAYLOAD_SIG_B64}" | base64 -d > "${SIG_FILE}" || fail "Invalid payload signature encoding."
+printf '%s\n' "${RESOLVED_PUBLIC_KEY_PEM}" > "${PUBKEY_FILE}"
+
+openssl dgst -sha256 -verify "${PUBKEY_FILE}" -signature "${SIG_FILE}" "${PAYLOAD_FILE}" >/dev/null 2>&1 \
+  || fail "Payload signature verification failed."
+
+chmod +x "${PAYLOAD_FILE}"
+echo "[INFO] Signature verified. Running installer..."
+exec bash "${PAYLOAD_FILE}"

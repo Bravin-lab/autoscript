@@ -1,0 +1,8 @@
+{
+  "status": "active",
+  "expires_at": "2026-12-31",
+  "allowed_ips": ["1.2.3.4"],
+  "max_ips": 1,
+  "bind_hwid_on_first_use": true,
+  "bound_hwid": ""
+}
