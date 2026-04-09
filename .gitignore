@@ -30,3 +30,8 @@ cloudflare-auth/.env.*
 # Optional local customer artifacts (keep examples committed)
 cloudflare-auth/licenses/customer*.json
 cloudflare-auth/licenses/*.local.json
+
+# Local tooling/runtime caches
+cloudflare-auth/.wrangler/
+private-auth/__pycache__/
+*.pyc
