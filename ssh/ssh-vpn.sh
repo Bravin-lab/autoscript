@@ -176,10 +176,11 @@ END
 
         mkdir -p /etc/nginx/stream-conf.d
         cat > /etc/nginx/stream-conf.d/shared-443.conf <<-END
-map \$ssl_preread_alpn_protocols \$shared443_upstream {
-        ~\\bh2\\b         127.0.0.1:8443;
-        ~\\bhttp/1.1\\b   127.0.0.1:8443;
-        default          127.0.0.1:7443;
+# SNI present -> nginx HTTPS/WS backend
+# No SNI (common for stunnel TLS clients) -> stunnel backend
+map \$ssl_preread_server_name \$shared443_upstream {
+        ""               127.0.0.1:7443;
+        default          127.0.0.1:8443;
 }
 
 server {

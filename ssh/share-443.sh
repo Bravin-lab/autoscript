@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Shared 443 multiplexer for Nginx (HTTPS/WS) and stunnel (SSH-SSL).
 # - Front door: nginx stream listens on 443
-# - HTTPS/WS traffic: routed to local nginx HTTPS backend on 8443
-# - Non-HTTP TLS traffic: routed to local stunnel backend on 7443
+# - SNI present: routed to local nginx HTTPS backend on 8443
+# - No SNI: routed to local stunnel backend on 7443
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run as root: sudo bash $0"
@@ -62,12 +62,11 @@ echo "[5/7] Writing nginx stream shared-443 router..."
 mkdir -p "${STREAM_DIR}"
 cat > "${STREAM_CONF}" <<'EOF'
 # Shared 443 frontend:
-# - ALPN h2/http1.1 -> nginx HTTPS backend on 127.0.0.1:8443
-# - other TLS (no ALPN) -> stunnel backend on 127.0.0.1:7443
-map $ssl_preread_alpn_protocols $shared443_upstream {
-    ~\bh2\b         127.0.0.1:8443;
-    ~\bhttp/1.1\b   127.0.0.1:8443;
-    default          127.0.0.1:7443;
+# - SNI present -> nginx HTTPS backend on 127.0.0.1:8443
+# - no SNI -> stunnel backend on 127.0.0.1:7443
+map $ssl_preread_server_name $shared443_upstream {
+  ""               127.0.0.1:7443;
+  default          127.0.0.1:8443;
 }
 
 server {
