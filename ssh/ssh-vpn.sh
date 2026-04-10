@@ -284,9 +284,18 @@ apt install stunnel4 -y
 cat > /etc/stunnel/stunnel.conf <<-END
 cert = /etc/stunnel/stunnel.pem
 client = no
+pid = /var/run/stunnel4/stunnel.pid
+foreground = quiet
+debug = 4
+output = /var/log/stunnel4/stunnel.log
 socket = a:SO_REUSEADDR=1
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
+socket = l:SO_KEEPALIVE=1
+socket = r:SO_KEEPALIVE=1
+TIMEOUTclose = 0
+TIMEOUTbusy = 300
+TIMEOUTidle = 600
 
 [ssh-ssl]
 accept = 222
@@ -318,6 +327,15 @@ cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
 # konfigurasi stunnel4
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 /lib/systemd/systemd-sysv-install enable stunnel4
+mkdir -p /etc/systemd/system/stunnel4.service.d
+cat > /etc/systemd/system/stunnel4.service.d/override.conf <<-END
+[Service]
+Restart=always
+RestartSec=2s
+StartLimitIntervalSec=0
+LimitNOFILE=65535
+END
+systemctl daemon-reload
 systemctl start stunnel4
 /etc/init.d/stunnel4 restart
 

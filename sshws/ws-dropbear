@@ -27,10 +27,11 @@ class Server(threading.Thread):
     def run(self):
         self.soc = socket.socket(socket.AF_INET)
         self.soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.soc.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.soc.settimeout(2)
         intport = int(self.port)
         self.soc.bind((self.host, intport))
-        self.soc.listen(0)
+        self.soc.listen(512)
         self.running = True
 
         try:
@@ -64,7 +65,8 @@ class Server(threading.Thread):
     def removeConn(self, conn):
         try:
             self.threadsLock.acquire()
-            self.threads.remove(conn)
+            if conn in self.threads:
+                self.threads.remove(conn)
         finally:
             self.threadsLock.release()
 
@@ -139,7 +141,8 @@ class ConnectionHandler(threading.Thread):
                 self.client.send('HTTP/1.1 400 NoXRealHost!\r\n\r\n')
 
         except Exception as e:
-            self.log += ' - error: ' + e.strerror
+            err = getattr(e, 'strerror', None) or str(e)
+            self.log += ' - error: ' + err
             self.server.printLog(self.log)
 	    pass
         finally:
@@ -175,6 +178,7 @@ class ConnectionHandler(threading.Thread):
         (soc_family, soc_type, proto, _, address) = socket.getaddrinfo(host, port)[0]
 
         self.target = socket.socket(soc_family, soc_type, proto)
+        self.target.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.targetClosed = False
         self.target.connect(address)
 
@@ -203,7 +207,7 @@ class ConnectionHandler(threading.Thread):
                         data = in_.recv(BUFLEN)
                         if data:
 			    if in_ is self.target:
-				self.client.send(data)
+				self.client.sendall(data)
                             else:
                                 while data:
                                     byte = self.target.send(data)
