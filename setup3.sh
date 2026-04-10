@@ -1,1 +1,0 @@
-HATERS KI MKC
