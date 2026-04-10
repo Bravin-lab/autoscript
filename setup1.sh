@@ -126,7 +126,8 @@ PAYLOAD_SIG_B64="$(echo "${AUTH_JSON}" | json_get_string payload_sig_b64)"
 [[ -n "${PAYLOAD_SIG_B64}" ]] || fail "Missing payload_sig_b64 in API response."
 
 echo "[INFO] Downloading protected installer payload..."
-curl -fsSLo "${PAYLOAD_FILE}" "${PAYLOAD_URL}" || fail "Payload download failed."
+# Force IPv4 so payload request IP matches the IPv4 bound into the token.
+curl -4fsSLo "${PAYLOAD_FILE}" "${PAYLOAD_URL}" || fail "Payload download failed."
 
 CALC_SHA256="$(sha256sum "${PAYLOAD_FILE}" | awk '{print $1}')"
 if [[ "${CALC_SHA256}" != "${PAYLOAD_SHA256}" ]]; then
