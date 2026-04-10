@@ -418,7 +418,7 @@ wget -O delete "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/s
 wget -O autokill "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/autokill.sh"
 wget -O ceklim "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/ceklim.sh"
 wget -O tendang "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/tendang.sh"
-wget -O sshws "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/sshws.sh"
+wget -O sshws "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-sshovpn.sh"
 wget -O user-lock "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/user-lock.sh"
 wget -O user-unlock "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/user-unlock.sh"
 
@@ -433,7 +433,7 @@ wget -O restart "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/
 wget -O bw "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/bw.sh"
 wget -O m-tcp "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/tcp.sh"
 wget -O xp "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/xp.sh"
-wget -O sshws "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/sshws.sh"
+wget -O sshws "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-sshovpn.sh"
 wget -O m-dns "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-dns.sh"
 
 chmod +x menu
