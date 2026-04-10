@@ -1,9 +1,14 @@
 #!/bin/bash
-# What are you looking for? fn ki maa ka bhosda?Wealth and power are only temporary; remember there is life after death.
-# Don't forget to pray; remember, death awaits you.
-# What's below is not a CD or cassette.
-cd
+# What are you looking for? fn ki maa ka bhosda?
+# Wealth and power are only temporary; remember, there is life after death.
+# Don't forget to pray.
 rm -rf setup.sh
+rm -rf /var/lib/ipvps.conf
+rm -rf /root/scdomain
+rm -rf /etc/xray/scdomain
+rm -rf /etc/xray/domain
+rm -rf /etc/v2ray/domain
+rm -rf /root/domain
 clear
 red='\e[1;31m'
 green='\e[0;32m'
@@ -19,18 +24,16 @@ tyblue() { echo -e "\\033[36;1m${*}\\033[0m"; }
 yellow() { echo -e "\\033[33;1m${*}\\033[0m"; }
 green() { echo -e "\\033[32;1m${*}\\033[0m"; }
 red() { echo -e "\\033[31;1m${*}\\033[0m"; }
+# domain random
+#CDN="https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh"
 cd /root
 #System version number
 if [ "${EUID}" -ne 0 ]; then
 		echo "You need to run this script as root"
-  sleep 5
 		exit 1
 fi
 if [ "$(systemd-detect-virt)" == "openvz" ]; then
 		echo "OpenVZ is not supported"
-  clear
-                echo "For VPS with KVM and VMWare virtualization ONLY"
-  sleep 5
 		exit 1
 fi
 
@@ -109,35 +112,39 @@ echo -e "[ ${BGreen}INFO${NC} ] Aight good ... installation file is ready"
 sleep 0.5
 echo -ne "[ ${BGreen}INFO${NC} ] Check permission : "
 
-echo -e "$BGreen Permission Accepted!$NC"
+echo -e "$BGreen Permission Accepted..$NC"
 sleep 2
 
 mkdir -p /var/lib/ >/dev/null 2>&1
 echo "IP=" >> /var/lib/ipvps.conf
-
 echo ""
 clear
-echo -e "$BBlue                     SETUP DOMAIN VPS     $NC"
-echo -e "$BYellow----------------------------------------------------------$NC"
-echo -e "$BGreen 1. Use Domain Random / Gunakan Domain Random $NC"
-echo -e "$BGreen 2. Choose Your Own Domain / Gunakan Domain Sendiri $NC"
-echo -e "$BYellow----------------------------------------------------------$NC"
-read -rp " input 1 or 2 / pilih 1 atau 2 : " dns
-if test $dns -eq 1; then
-wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/cf && chmod +x cf && ./cf
-elif test $dns -eq 2; then
-read -rp "Enter Your Domain / masukan domain : " dom
+echo -e "$BBlue                          NT SETUP SUBDOMAIN VPS     $NC"
+echo -e "$BYellow-------------------------------------------------------------------$NC"
+echo -e "$BYellow Pastikan Subdomain sudah pointing dengan ip vps di cloudflare $NC"
+echo -e "$BYellow Make sure the Subdomain is pointing with the ip vps on cloudflare $NC"
+echo -e "$BYellow-------------------------------------------------------------------$NC"
+#echo -e "$BGreen 1. Use Domain Random / Gunakan Domain Random $NC"
+#echo -e "$BGreen 2. Choose Your Own Domain / Gunakan Domain Sendiri $NC"
+#echo -e "$BYellow----------------------------------------------------------$NC"
+#read -rp " input 1 or 2 / pilih 1 atau 2 : " dns
+#if test $dns -eq 1; then
+#clear
+#apt install jq curl -y
+#wget -q -O /root/cf "${CDN}/cf" >/dev/null 2>&1
+#chmod +x /root/cf
+#bash /root/cf | tee /root/install.log
+#print_success "Domain Random Done"
+#elif test $dns -eq 2; then
+echo ""
+read -rp "Enter Your Subdomain / Masukan Subdomain : " dom
 echo "IP=$dom" > /var/lib/ipvps.conf
 echo "$dom" > /root/scdomain
 echo "$dom" > /etc/xray/scdomain
 echo "$dom" > /etc/xray/domain
 echo "$dom" > /etc/v2ray/domain
 echo "$dom" > /root/domain
-else 
-echo "Not Found Argument"
-exit 1
-fi
-echo -e "${BGreen}Done!${NC}"
+echo -e "${BGreen}Done..${NC}"
 sleep 2
 clear
     
@@ -222,8 +229,8 @@ echo "=================================================================="  | tee
 echo ""
 echo "   >>> Service & Port"  | tee -a log-install.txt
 echo "   - OpenSSH                  : 22"  | tee -a log-install.txt
-echo "   - SSH Websocket            : 80" | tee -a log-install.txt
-echo "   - SSH SSL Websocket        : 443" | tee -a log-install.txt
+echo "   - SSH Websocket            : 80, 8080, 8880" | tee -a log-install.txt
+echo "   - SSH SSL Websocket        : 445" | tee -a log-install.txt
 echo "   - Stunnel4                 : 222, 777" | tee -a log-install.txt
 echo "   - Dropbear                 : 109, 143" | tee -a log-install.txt
 echo "   - Badvpn                   : 7100-7900" | tee -a log-install.txt
@@ -254,6 +261,6 @@ secs_to_human "$(($(date +%s) - ${start}))" | tee -a log-install.txt
 echo -e ""
 echo " Auto reboot in 10 Seconds "
 sleep 10
-rm -rf setup.sh
+rm -f setup.sh
 reboot
 
