@@ -225,16 +225,17 @@ rm /etc/nginx/conf.d/default.conf
 systemctl daemon-reload
 service nginx restart
 cd
-mkdir /home/vps
-mkdir /home/vps/public_html
+mkdir -p /home/vps
+mkdir -p /home/vps/public_html
 wget -O /home/vps/public_html/index.html "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/index"
-wget -O /home/vps/public_html/.htaccess "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/.htaccess"
-mkdir /home/vps/public_html/ss-ws
-mkdir /home/vps/public_html/clash-ws
+wget -q -O /home/vps/public_html/.htaccess "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/.htaccess" || touch /home/vps/public_html/.htaccess
+mkdir -p /home/vps/public_html/ss-ws
+mkdir -p /home/vps/public_html/clash-ws
 # install badvpn
 cd
-wget -O /usr/bin/badvpn-udpgw "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/newudpgw"
-chmod +x /usr/bin/badvpn-udpgw
+wget -q -O /usr/bin/badvpn-udpgw.new "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/newudpgw"
+chmod +x /usr/bin/badvpn-udpgw.new
+mv -f /usr/bin/badvpn-udpgw.new /usr/bin/badvpn-udpgw
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7100 --max-clients 500' /etc/rc.local
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7200 --max-clients 500' /etc/rc.local
 sed -i '$ i\screen -dmS badvpn badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 500' /etc/rc.local
