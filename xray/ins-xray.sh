@@ -381,8 +381,8 @@ cat >/etc/nginx/conf.d/xray.conf <<EOF
              listen [::]:80;
              listen [::]:8080;
              listen [::]:8880;
-             listen 443 ssl http2 reuseport;
-             listen [::]:443 http2 reuseport;	
+             listen 8443 ssl http2 reuseport;
+             listen [::]:8443 http2 reuseport;
              server_name *.$domain;
              ssl_certificate /etc/xray/xray.crt;
              ssl_certificate_key /etc/xray/xray.key;
