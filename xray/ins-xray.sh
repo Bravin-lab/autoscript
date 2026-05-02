@@ -375,14 +375,14 @@ EOF
 #nginx config
 cat >/etc/nginx/conf.d/xray.conf <<EOF
     server {
-         listen 80;
-         listen 8080;
-         listen 8880;
-         listen [::]:80;
-         listen [::]:8080;
-         listen [::]:8880;
-         listen 8443 ssl http2 reuseport;
-         listen [::]:8443 http2 reuseport;
+             listen 80;
+             listen 8080;
+             listen 8880;
+             listen [::]:80;
+             listen [::]:8080;
+             listen [::]:8880;
+             listen 443 ssl http2 reuseport;
+             listen [::]:443 http2 reuseport;	
              server_name *.$domain;
              ssl_certificate /etc/xray/xray.crt;
              ssl_certificate_key /etc/xray/xray.key;
@@ -495,40 +495,6 @@ systemctl daemon-reload
 systemctl enable xray
 systemctl restart xray
 systemctl restart nginx
-# Install and configure HAProxy as an SNI-aware TCP router on port 443
-apt-get update >/dev/null 2>&1 || true
-apt-get install -y haproxy >/dev/null 2>&1 || true
-
-# Create haproxy stream config to route by SNI. stunnel clients should use SNI stunnel.$domain
-cat >/etc/haproxy/haproxy.cfg <<EOT
-global
-  daemon
-  maxconn 20000
-
-defaults
-  mode                    tcp
-  timeout connect         5s
-  timeout client          1m
-  timeout server          1m
-
-frontend ft_443
-  bind *:443
-  tcp-request inspect-delay 5s
-  tcp-request content accept if { req_ssl_hello_type 1 }
-  acl is_stunnel req.ssl_sni -i stunnel.$domain
-  use_backend bk_stunnel if is_stunnel
-  default_backend bk_web
-
-backend bk_web
-  server web1 127.0.0.1:8443 check
-
-backend bk_stunnel
-  server st1 127.0.0.1:700 check
-EOT
-
-# Restart haproxy
-systemctl enable haproxy
-systemctl restart haproxy || true
 systemctl enable runn
 systemctl restart runn
 
