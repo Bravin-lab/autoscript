@@ -1,5 +1,49 @@
 #!/bin/bash
 
+# Icon helpers
+icon_ok() { echo -e "\033[0;32m✔\033[0m"; }
+icon_bad() { echo -e "\033[0;31m✘\033[0m"; }
+
+# Function to count connected users
+# Uses `who` output (works for SSH/Dropbear sessions)
+get_connected_users() {
+    if command -v who >/dev/null 2>&1; then
+        # who output lines correspond to active logged-in sessions
+        who | awk 'NF>=6{c++} END{print c+0}'
+    else
+        echo 0
+    fi
+}
+
+# Function to get service status with tick/cross
+get_service_status() {
+    # $1 = label (what to print), $2 = unit/service name (systemctl), $3 = optional init.d script path
+    local label="$1"
+    local unit="$2"
+    local initd="$3"
+
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl is-active --quiet "$unit" 2>/dev/null; then
+            echo "$(icon_ok) $label"
+        else
+            echo "$(icon_bad) $label"
+        fi
+        return 0
+    fi
+
+    # init.d fallback (if provided)
+    if [ -n "$initd" ] && [ -f "$initd" ]; then
+        if "$initd" status 2>/dev/null | grep -qi "active"; then
+            echo "$(icon_ok) $label"
+        else
+            echo "$(icon_bad) $label"
+        fi
+        return 0
+    fi
+
+    echo "$(icon_bad) $label"
+}
+
 # Function to fetch RAM information
 get_ram_info() {
     ram_info=$(free -m | awk 'NR==2{print $2,$3}')
@@ -69,6 +113,21 @@ show_menu() {
     echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
     echo -e "\e[1;32m Client Name \e[0m: $Name"
     echo -e "\e[1;32m Expired     \e[0m: $Exp2"
+    echo -e "\e[1;32m Connected   \e[0m: $(get_connected_users) users"
+
+    # Service status (tick/cross)
+    # XRAY (xray.service)
+    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "XRAY" "xray.service")"
+    # Dropbear
+    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "Dropbear" "dropbear.service" "/etc/init.d/dropbear")"
+    # Websocket services
+    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "ws-stunnel" "ws-stunnel.service")"
+    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "ws-dropbear" "ws-dropbear.service")"
+    # Fail2ban
+    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "fail2ban" "fail2ban.service" "/etc/init.d/fail2ban")"
+    # Cron
+    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "cron" "cron.service" "/etc/init.d/cron")"
+
     echo -e "\e[1;32m POWERED BY  \e[0m: BRAVIN"
     echo -e "\e[1;32m MADE BY     \e[0m: BRAVIN"
     echo -e "\e[1;33m -------------------------------------------------\e[0m"
