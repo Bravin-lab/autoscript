@@ -57,22 +57,44 @@ show_menu() {
     show_vps_info
     show_cpu_ram_info
 
-    echo -e "\e[1;34m                  ┏━━━━━━━━━━━━━━━━━━━━━━━┓                  \e[0m"
-    echo -e "\e[1;34m                  ┃      MAIN  MENU       ┃                  \e[0m"
-    echo -e "\e[1;34m                  ┗━━━━━━━━━━━━━━━━━━━━━━━┛                  \e[0m"
-    echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-    echo -e "\e[1;36m┃  [1] Menu SSH           ┃  [5] Menu Setting     ┃\e[0m"
-    echo -e "\e[1;36m┃  [2] Menu Vmess         ┃  [6] Status Service   ┃\e[0m"
-    echo -e "\e[1;36m┃  [3] Menu Trojan        ┃  [7] Clear RAM Cache  ┃\e[0m"
-    echo -e "\e[1;36m┃  [4] Menu Shadowsocks   ┃  [8] Reboot VPS       ┃\e[0m"
-    echo -e "\e[1;36m┃  [x] Exit Script        ┃                      ┃\e[0m"
-    echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-    echo -e "\e[1;32m Client Name \e[0m: $Name"
-    echo -e "\e[1;32m Expired     \e[0m: $Exp2"
-    echo -e "\e[1;32m POWERED BY  \e[0m: BRAVIN"
-    echo -e "\e[1;32m MADE BY     \e[0m: BRAVIN"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e ""
+    # small helper: check unit active
+    svc() { systemctl is-active --quiet "$1" >/dev/null 2>&1 && echo -e "\\e[1;32mON\\e[0m" || echo -e "\\e[1;31mOFF\\e[0m"; }
+
+    nginx_s=$(svc nginx)
+    xray_s=$(svc xray)
+    stunnel_s=$(svc stunnel4)
+    wsstun_s=$(svc ws-stunnel.service)
+    dropbear_s=$(svc dropbear)
+    ssh_s=$(svc ssh)
+
+    # Header
+    echo -e "\\e[1;36m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\\e[0m"
+    echo -e "\\e[1;35m┃               NT VIP AIO — DASHBOARD  (creative)           ┃\\e[0m"
+    echo -e "\\e[1;36m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\\e[0m"
+
+    # Services row
+    printf "\\n"
+    echo -e "\\e[1;34m[ SERVICES ]\\e[0m  SSH:[ ${ssh_s} ]  NGINX:[ ${nginx_s} ]  XRAY:[ ${xray_s} ]  STUNNEL:[ ${stunnel_s} ]"
+    echo -e "\\e[1;34m                          WS-TLS:[ ${wsstun_s} ]  DROPBEAR:[ ${dropbear_s} ]\\e[0m"
+    printf "\\n"
+
+    # Menu boxes — keep commands identical, only layout changes
+    echo -e "\\e[1;33m┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐\\e[0m"
+    echo -e "\\e[1;32m│ [1]  SSH Menu           │  │ [2]  VMess Menu         │  │ [3]  Trojan Menu        │\\e[0m"
+    echo -e "\\e[1;33m└─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘\\e[0m"
+    echo -e "\\e[1;33m┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐\\e[0m"
+    echo -e "\\e[1;32m│ [4]  Shadowsocks Menu   │  │ [5]  Settings           │  │ [6]  Status Service     │\\e[0m"
+    echo -e "\\e[1;33m└─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘\\e[0m"
+
+    echo -e "\\n\\e[1;34m┌──────────────────────────────────────────────────────────────┐\\e[0m"
+    echo -e "\\e[1;36m│ [7] Clear RAM Cache   [8] Reboot VPS   [x] Exit              │\\e[0m"
+    echo -e "\\e[1;34m└──────────────────────────────────────────────────────────────┘\\e[0m"
+
+    # Footer info (client/name etc.)
+    echo -e "\\n\\e[1;32m Client : $Name    Expire: $Exp2    DOMAIN: $(cat /etc/xray/domain)\\e[0m"
+    echo -e "\\e[1;33m---------------------------------------------------------------\\e[0m"
+
+    # prompt (same behavior)
     read -p " Select menu :  " opt
     echo ""
     case $opt in
