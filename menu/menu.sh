@@ -1,5 +1,218 @@
 #!/bin/bash
 
+# Color status indicator function
+get_status_color() {
+    local value=$1
+    local threshold1=$2
+    local threshold2=$3
+    
+    if (( $(echo "$value < $threshold1" | bc -l) )); then
+        echo -e "\e[1;32m●\e[0m"  # Green
+    elif (( $(echo "$value < $threshold2" | bc -l) )); then
+        echo -e "\e[1;33m●\e[0m"  # Yellow
+    else
+        echo -e "\e[1;31m●\e[0m"  # Red
+    fi
+}
+
+# Function to check service status
+check_service_status() {
+    local service=$1
+    if systemctl is-active --quiet $service 2>/dev/null; then
+        echo -e "\e[1;32m✓\e[0m"
+    else
+        echo -e "\e[1;31m✗\e[0m"
+    fi
+}
+
+# Get service uptime
+get_service_uptime() {
+    local service=$1
+    if systemctl is-active --quiet $service 2>/dev/null; then
+        systemctl show -p ActiveEnterTimestamp $service 2>/dev/null | cut -d= -f2 | xargs -I {} date -d "{}" +%s 2>/dev/null | {
+            read timestamp
+            if [ -n "$timestamp" ]; then
+                echo $(($(date +%s) - timestamp))
+            else
+                echo 0
+            fi
+        }
+    else
+        echo "N/A"
+    fi
+}
+
+# Format seconds to readable time
+format_time() {
+    local seconds=$1
+    if [ "$seconds" = "N/A" ]; then
+        echo "N/A"
+        return
+    fi
+    local days=$((seconds / 86400))
+    local hours=$(((seconds % 86400) / 3600))
+    local mins=$(((seconds % 3600) / 60))
+    
+    if [ $days -gt 0 ]; then
+        echo "${days}d ${hours}h ${mins}m"
+    elif [ $hours -gt 0 ]; then
+        echo "${hours}h ${mins}m"
+    else
+        echo "${mins}m"
+    fi
+}
+
+# Get disk usage
+get_disk_usage() {
+    df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}' 
+}
+
+# Get disk percentage
+get_disk_percent() {
+    df -h / | awk 'NR==2 {gsub("%",""); print $5}'
+}
+
+# Get load average with color
+get_load_average() {
+    local load=$(uptime | awk -F'load average:' '{print $2}' | xargs)
+    local load1=$(echo $load | awk '{print $1}' | sed 's/,//')
+    local status=$(get_status_color $load1 2 4)
+    echo -e "${status} $load"
+}
+
+# Get RAM percentage
+get_ram_percent() {
+    free | awk 'NR==2 {printf "%.1f", ($3/$2)*100}'
+}
+
+# Get memory color status
+get_memory_status() {
+    local percent=$(get_ram_percent)
+    get_status_color $percent 50 80
+}
+
+# Get active connections count
+get_active_connections() {
+    ss -tn 2>/dev/null | grep ESTAB | wc -l
+}
+
+# Get network interfaces bandwidth (basic)
+get_bandwidth_usage() {
+    if command -v ifstat &> /dev/null; then
+        ifstat -i eth0,eth1 -n 1 2 | tail -1 | awk '{printf "RX: %.2f MB/s TX: %.2f MB/s", $1/1024, $2/1024}'
+    else
+        echo "N/A (install ifstat)"
+    fi
+}
+
+# Get SSL certificate expiry
+get_cert_expiry() {
+    local domain=$(cat /etc/xray/domain 2>/dev/null)
+    if [ -z "$domain" ]; then
+        echo "N/A"
+        return
+    fi
+    
+    local cert_file="/etc/xray/cert.pem"
+    if [ -f "$cert_file" ]; then
+        local exp_date=$(openssl x509 -enddate -noout -in "$cert_file" 2>/dev/null | cut -d= -f2)
+        local exp_epoch=$(date -d "$exp_date" +%s 2>/dev/null)
+        local now=$(date +%s)
+        local days=$(( ($exp_epoch - $now) / 86400 ))
+        
+        if [ $days -lt 0 ]; then
+            echo -e "\e[1;31mEXPIRED\e[0m"
+        elif [ $days -lt 7 ]; then
+            echo -e "\e[1;31m${days} days\e[0m"
+        elif [ $days -lt 30 ]; then
+            echo -e "\e[1;33m${days} days\e[0m"
+        else
+            echo -e "\e[1;32m${days} days\e[0m"
+        fi
+    else
+        echo "N/A"
+    fi
+}
+
+# Get fail2ban status
+get_fail2ban_status() {
+    if systemctl is-active --quiet fail2ban 2>/dev/null; then
+        local banned=$(fail2ban-client status sshd 2>/dev/null | grep "Currently banned" | awk '{print $NF}' || echo "0")
+        echo -e "Active (Banned IPs: $banned)"
+    else
+        echo -e "\e[1;33mInactive\e[0m"
+    fi
+}
+
+# Get total SSH users count
+get_total_users() {
+    grep -c "^[^#]" /etc/passwd 2>/dev/null || echo "0"
+}
+
+# Get new users today
+get_new_users_today() {
+    find /home -type d -newermt "today" -user root 2>/dev/null | wc -l
+}
+
+# Get expiring accounts (within 3 days)
+get_expiring_accounts() {
+    local count=0
+    if [ -f /etc/shadow ]; then
+        while IFS=: read -r user pass lastchange expdate; do
+            if [ ! -z "$expdate" ] && [ "$expdate" != "-1" ] && [ "$expdate" != "0" ]; then
+                local exp_epoch=$((($expdate * 86400)))
+                local now=$(date +%s)
+                local days=$(( ($exp_epoch - $now) / 86400 ))
+                if [ $days -le 3 ] && [ $days -gt 0 ]; then
+                    count=$((count + 1))
+                fi
+            fi
+        done < /etc/shadow
+    fi
+    echo $count
+}
+
+# Get system security alerts
+get_security_alerts() {
+    local alerts=""
+    
+    # Check for failed SSH attempts
+    local failed=$(grep "Failed password" /var/log/auth.log 2>/dev/null | wc -l)
+    if [ $failed -gt 10 ]; then
+        alerts="${alerts}\e[1;31m⚠ High failed SSH attempts ($failed)\e[0m\n"
+    fi
+    
+    # Check disk space
+    local disk_usage=$(get_disk_percent)
+    if [ "${disk_usage%.*}" -gt 90 ]; then
+        alerts="${alerts}\e[1;31m⚠ Disk space critical (${disk_usage}%)\e[0m\n"
+    fi
+    
+    if [ -z "$alerts" ]; then
+        echo -e "\e[1;32mNo alerts\e[0m"
+    else
+        echo -e "$alerts" | head -3
+    fi
+}
+
+# Function to display Bravin branding header
+show_bravin_header() {
+    echo -e "\e[1;35m╔════════════════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;35m║                                                            ║\e[0m"
+    echo -e "\e[1;35m║     \e[1;33mScript Created and Maintained by BRAVIN VIP AIO\e[0m\e[1;35m     ║\e[0m"
+    echo -e "\e[1;35m║                                                            ║\e[0m"
+    echo -e "\e[1;35m╚════════════════════════════════════════════════════════════╝\e[0m"
+}
+
+# Function to display service status
+show_service_status() {
+    echo -e "\e[1;34m                    SERVICE STATUS                      \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32m SSH            \e[0m: $(check_service_status sshd)  \e[1;32m Nginx          \e[0m: $(check_service_status nginx)"
+    echo -e "\e[1;32m Xray           \e[0m: $(check_service_status xray)  \e[1;32m Stunnel4       \e[0m: $(check_service_status stunnel4)"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
 # Function to fetch RAM information
 get_ram_info() {
     ram_info=$(free -m | awk 'NR==2{print $2,$3}')
@@ -14,32 +227,8 @@ get_cpu_usage() {
     cpu_usage+=" %"
 }
 
-# Function to fetch disk usage
-get_disk_usage() {
-    disk_info=$(df -h / | awk 'NR==2{print $2, $3, $5}')
-    disk_total=$(echo "$disk_info" | awk '{print $1}')
-    disk_used=$(echo "$disk_info" | awk '{print $2}')
-    disk_percent=$(echo "$disk_info" | awk '{print $3}')
-}
-
-# Function to fetch system load
-get_system_load() {
-    load_avg=$(uptime | awk -F'load average:' '{print $2}' | xargs)
-    load_1=$(echo "$load_avg" | awk '{print $1}' | sed 's/,//')
-}
-
-# Function to check service alerts
-check_service_alerts() {
-    alerts=""
-    systemctl is-active --quiet nginx || alerts="${alerts}NGINX "
-    systemctl is-active --quiet xray || alerts="${alerts}XRAY "
-    systemctl is-active --quiet stunnel4 || alerts="${alerts}STUNNEL "
-    systemctl is-active --quiet ssh || alerts="${alerts}SSH "
-}
-
 # Function to display VPS information
 show_vps_info() {
-    clear
     domain=$(cat /etc/xray/domain)
     uptime=$(uptime -p | cut -d " " -f 2-10)
     DATE2=$(date -R | cut -d " " -f -5)
@@ -65,83 +254,131 @@ show_vps_info() {
 show_cpu_ram_info() {
     get_ram_info
     get_cpu_usage
-    get_disk_usage
-    get_system_load
+    local disk_usage=$(get_disk_percent)
+    local ram_percent=$(get_ram_percent)
 
-    echo -e "\e[1;34m                   NT CPU/RAM/DISK INFO                  \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;32m CPU USAGE   \e[0m: $cpu_usage"
-    echo -e "\e[1;32m RAM USED    \e[0m: ${uram} MB / ${tram} MB"
-    echo -e "\e[1;32m DISK USED   \e[0m: ${disk_used} / ${disk_total} (${disk_percent})"
-    echo -e "\e[1;32m LOAD AVG    \e[0m: ${load_avg}"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
+    echo -e "\e[1;34m                 SYSTEM RESOURCES                  \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32m CPU Usage   \e[0m: $(get_status_color ${cpu_usage%% *} 50 80) $cpu_usage"
+    echo -e "\e[1;32m RAM Usage   \e[0m: $(get_memory_status) ${ram_percent}% (${uram}MB/${tram}MB)"
+    echo -e "\e[1;32m Disk Usage  \e[0m: $(get_status_color $disk_usage 75 90) ${disk_usage}% ($(get_disk_usage))"
+    echo -e "\e[1;32m Load Avg    \e[0m: $(get_load_average)"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
+# Display service health and statistics
+show_service_health() {
+    echo -e "\e[1;34m              SERVICE HEALTH & UPTIME               \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    
+    local sshd_uptime=$(format_time $(get_service_uptime sshd))
+    local nginx_uptime=$(format_time $(get_service_uptime nginx))
+    local xray_uptime=$(format_time $(get_service_uptime xray))
+    local stunnel_uptime=$(format_time $(get_service_uptime stunnel4))
+    
+    echo -e "\e[1;32m SSH Uptime     \e[0m: $sshd_uptime"
+    echo -e "\e[1;32m Nginx Uptime   \e[0m: $nginx_uptime"
+    echo -e "\e[1;32m Xray Uptime    \e[0m: $xray_uptime"
+    echo -e "\e[1;32m Stunnel Uptime \e[0m: $stunnel_uptime"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
+# Display certificate information
+show_certificate_info() {
+    echo -e "\e[1;34m                 SSL CERTIFICATE                   \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32m Certificate Expiry \e[0m: $(get_cert_expiry)"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
+# Get currently connected SSH users
+get_connected_users() {
+    who | awk '{print $1, "from", $3}' | sort -u
+}
+
+# Get connected users count
+get_connected_users_count() {
+    who | wc -l
+}
+
+# Display active connections detail
+show_network_info() {
+    echo -e "\e[1;34m                 NETWORK STATUS                   \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32m Total Connections   \e[0m: $(get_active_connections)"
+    echo -e "\e[1;32m Connected SSH Users  \e[0m: $(get_connected_users_count)"
+    
+    local users=$(get_connected_users)
+    if [ -n "$users" ]; then
+        echo -e "\e[1;32m Active Users:\e[0m"
+        echo "$users" | sed 's/^/   ├─ /'
+    else
+        echo -e "\e[1;32m Active Users:\e[0m    (None)"
+    fi
+    
+    echo -e "\e[1;32m Bandwidth Usage      \e[0m: $(get_bandwidth_usage)"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
+# Display security information
+show_security_info() {
+    echo -e "\e[1;34m                  SECURITY STATUS                  \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32m Fail2Ban       \e[0m: $(get_fail2ban_status)"
+    echo -e "\e[1;32m Security Alerts \e[0m:"
+    get_security_alerts | sed 's/^/   /'
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
+# Display user statistics
+show_user_statistics() {
+    echo -e "\e[1;34m                 USER STATISTICS                  \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32m Total Users        \e[0m: $(get_total_users)"
+    echo -e "\e[1;32m New Users Today    \e[0m: $(get_new_users_today)"
+    echo -e "\e[1;32m Expiring Soon      \e[0m: $(get_expiring_accounts)"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
 }
 
 # Function to display menu and handle user input
 show_menu() {
     clear
+    show_bravin_header
+    echo ""
+    show_service_status
+    echo ""
     show_vps_info
+    echo ""
     show_cpu_ram_info
+    echo ""
+    show_service_health
+    echo ""
+    show_certificate_info
+    echo ""
+    show_network_info
+    echo ""
+    show_security_info
+    echo ""
+    show_user_statistics
+    echo ""
 
-    # small helper: check unit active
-    svc() { systemctl is-active --quiet "$1" >/dev/null 2>&1 && echo -e "\\e[1;32m✓ ON\\e[0m" || echo -e "\\e[1;31m✗ OFF\\e[0m"; }
-    svc_col() { systemctl is-active --quiet "$1" >/dev/null 2>&1 && echo -e "\\e[1;32m" || echo -e "\\e[1;31m"; }
-
-    nginx_s=$(svc nginx)
-    xray_s=$(svc xray)
-    stunnel_s=$(svc stunnel4)
-    wsstun_s=$(svc ws-stunnel.service)
-    dropbear_s=$(svc dropbear)
-    ssh_s=$(svc ssh)
-
-    # Header — CREATIVE TITLE with styling (now includes branding)
-    echo -e "\\e[1;36m╔══════════════════════════════════════════════════════════════╗\\e[0m"
-    echo -e "\\e[1;35m║                      POWERED BY BRAVIN                      ║\\e[0m"
-    echo -e "\\e[1;36m╠══════════════════════════════════════════════════════════════╣\\e[0m"
-    echo -e "\\e[1;35m║              NT VIP AIO TERMINAL MANAGEMENT v2.0             ║\\e[0m"
-    echo -e "\\e[1;36m╠══════════════════════════════════════════════════════════════╣\\e[0m"
-    echo -e "\\e[1;36m║                    [ MANAGEMENT DASHBOARD ]                  ║\\e[0m"
-    echo -e "\\e[1;36m╚══════════════════════════════════════════════════════════════╝\\e[0m"
-
-    # Live Service Status with status colors
-    printf "\\n"
-    echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
-    echo -e "\\e[1;33m [ SERVICE STATUS ]\\e[0m"
-    echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
-    echo -e "  SSH............: ${ssh_s}  │  NGINX........: ${nginx_s}  │  XRAY........: ${xray_s}"
-    echo -e "  STUNNEL........: ${stunnel_s}  │  WS-TLS.......: ${wsstun_s}  │  DROPBEAR....: ${dropbear_s}"
-    echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
-
-    # Service Alerts — check for DOWN services
-    check_service_alerts
-    if [ -n "$alerts" ]; then
-        echo -e "\\e[1;31m⚠ WARNING: The following services are DOWN: ${alerts}\\e[0m"
-        echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
-    fi
-
-    # Color-coded Menu Categories
-    printf "\\n"
-    echo -e "\\e[1;32m┌─ CONNECTION SERVICES ─────────────────────────────────────┐\\e[0m"
-    echo -e "\\e[1;32m│  \\e[0m\\e[1;36m[1]\\e[0m  SSH / OpenVPN Menu   \\e[1;32m│  \\e[0m\\e[1;36m[2]\\e[0m  VMess Menu         \\e[1;32m│\\e[0m"
-    echo -e "\\e[1;32m│  \\e[0m\\e[1;36m[3]\\e[0m  Trojan Menu         \\e[1;32m│  \\e[0m\\e[1;36m[4]\\e[0m  Shadowsocks Menu   \\e[1;32m│\\e[0m"
-    echo -e "\\e[1;32m└────────────────────────────────────────────────────────────┘\\e[0m"
-
-    echo -e "\\e[1;34m┌─ SYSTEM & UTILITIES ───────────────────────────────────────┐\\e[0m"
-    echo -e "\\e[1;34m│  \\e[0m\\e[1;36m[5]\\e[0m  Advanced Settings    \\e[1;34m│  \\e[0m\\e[1;36m[6]\\e[0m  Service Status     \\e[1;34m│\\e[0m"
-    echo -e "\\e[1;34m│  \\e[0m\\e[1;36m[7]\\e[0m  Clear Cache         \\e[1;34m│  \\e[0m\\e[1;36m[8]\\e[0m  Reboot System      \\e[1;34m│\\e[0m"
-    echo -e "\\e[1;34m└────────────────────────────────────────────────────────────┘\\e[0m"
-
-    echo -e "\\e[1;31m┌─ EXIT ─────────────────────────────────────────────────────┐\\e[0m"
-    echo -e "\\e[1;31m│  \\e[0m\\e[1;36m[x]\\e[0m  Exit Menu                                          \\e[1;31m│\\e[0m"
-    echo -e "\\e[1;31m└────────────────────────────────────────────────────────────┘\\e[0m"
-
-    # Footer with user info
-    echo -e "\\n\\e[1;37m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\\e[0m"
-    echo -e "\\e[1;37m┃  User: $Name  │  Expiry: $Exp2  │  Domain: $(cat /etc/xray/domain)\\e[0m"
-    echo -e "\\e[1;37m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\\e[0m"
-
-    # prompt (same behavior)
-    read -p " $(echo -e '\\e[1;33m>>\\e[0m') Select menu :  " opt
+    echo -e "\e[1;34m                  ┏━━━━━━━━━━━━━━━━━━━━━━━┓                  \e[0m"
+    echo -e "\e[1;34m                  ┃      MAIN  MENU       ┃                  \e[0m"
+    echo -e "\e[1;34m                  ┗━━━━━━━━━━━━━━━━━━━━━━━┛                  \e[0m"
+    echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo -e "\e[1;36m┃  [1] Menu SSH           ┃  [5] Menu Setting     ┃\e[0m"
+    echo -e "\e[1;36m┃  [2] Menu Vmess         ┃  [6] Status Service   ┃\e[0m"
+    echo -e "\e[1;36m┃  [3] Menu Trojan        ┃  [7] Clear RAM Cache  ┃\e[0m"
+    echo -e "\e[1;36m┃  [4] Menu Shadowsocks   ┃  [8] Reboot VPS       ┃\e[0m"
+    echo -e "\e[1;36m┃  [x] Exit Script        ┃                      ┃\e[0m"
+    echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo -e "\e[1;32m Client Name \e[0m: $Name"
+    echo -e "\e[1;32m Expired     \e[0m: $Exp2"
+    echo -e "\e[1;32m POWERED BY  \e[0m: BRAVIN"
+    echo -e "\e[1;32m MADE BY     \e[0m: BRAVIN"
+    echo -e "\e[1;33m -------------------------------------------------\e[0m"
+    echo -e ""
+    read -p " Select menu :  " opt
     echo ""
     case $opt in
     1) clear ; m-sshovpn ;;
