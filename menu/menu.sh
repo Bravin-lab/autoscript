@@ -14,6 +14,29 @@ get_cpu_usage() {
     cpu_usage+=" %"
 }
 
+# Function to fetch disk usage
+get_disk_usage() {
+    disk_info=$(df -h / | awk 'NR==2{print $2, $3, $5}')
+    disk_total=$(echo "$disk_info" | awk '{print $1}')
+    disk_used=$(echo "$disk_info" | awk '{print $2}')
+    disk_percent=$(echo "$disk_info" | awk '{print $3}')
+}
+
+# Function to fetch system load
+get_system_load() {
+    load_avg=$(uptime | awk -F'load average:' '{print $2}' | xargs)
+    load_1=$(echo "$load_avg" | awk '{print $1}' | sed 's/,//')
+}
+
+# Function to check service alerts
+check_service_alerts() {
+    alerts=""
+    systemctl is-active --quiet nginx || alerts="${alerts}NGINX "
+    systemctl is-active --quiet xray || alerts="${alerts}XRAY "
+    systemctl is-active --quiet stunnel4 || alerts="${alerts}STUNNEL "
+    systemctl is-active --quiet ssh || alerts="${alerts}SSH "
+}
+
 # Function to display VPS information
 show_vps_info() {
     clear
@@ -42,12 +65,15 @@ show_vps_info() {
 show_cpu_ram_info() {
     get_ram_info
     get_cpu_usage
+    get_disk_usage
+    get_system_load
 
-    echo -e "\e[1;34m                   NT CPU/RAM INFO                  \e[0m"
+    echo -e "\e[1;34m                   NT CPU/RAM/DISK INFO                  \e[0m"
     echo -e "\e[1;33m -------------------------------------------------\e[0m"
     echo -e "\e[1;32m CPU USAGE   \e[0m: $cpu_usage"
-    echo -e "\e[1;32m RAM USED    \e[0m: ${uram} MB"
-    echo -e "\e[1;32m RAM TOTAL   \e[0m: ${tram} MB"
+    echo -e "\e[1;32m RAM USED    \e[0m: ${uram} MB / ${tram} MB"
+    echo -e "\e[1;32m DISK USED   \e[0m: ${disk_used} / ${disk_total} (${disk_percent})"
+    echo -e "\e[1;32m LOAD AVG    \e[0m: ${load_avg}"
     echo -e "\e[1;33m -------------------------------------------------\e[0m"
 }
 
@@ -58,7 +84,8 @@ show_menu() {
     show_cpu_ram_info
 
     # small helper: check unit active
-    svc() { systemctl is-active --quiet "$1" >/dev/null 2>&1 && echo -e "\\e[1;32mON\\e[0m" || echo -e "\\e[1;31mOFF\\e[0m"; }
+    svc() { systemctl is-active --quiet "$1" >/dev/null 2>&1 && echo -e "\\e[1;32m✓ ON\\e[0m" || echo -e "\\e[1;31m✗ OFF\\e[0m"; }
+    svc_col() { systemctl is-active --quiet "$1" >/dev/null 2>&1 && echo -e "\\e[1;32m" || echo -e "\\e[1;31m"; }
 
     nginx_s=$(svc nginx)
     xray_s=$(svc xray)
@@ -67,35 +94,54 @@ show_menu() {
     dropbear_s=$(svc dropbear)
     ssh_s=$(svc ssh)
 
-    # Header
-    echo -e "\\e[1;36m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\\e[0m"
-    echo -e "\\e[1;35m┃               NT VIP AIO — DASHBOARD  (creative)           ┃\\e[0m"
-    echo -e "\\e[1;36m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\\e[0m"
+    # Header — CREATIVE TITLE with styling (now includes branding)
+    echo -e "\\e[1;36m╔══════════════════════════════════════════════════════════════╗\\e[0m"
+    echo -e "\\e[1;35m║                      POWERED BY BRAVIN                      ║\\e[0m"
+    echo -e "\\e[1;36m╠══════════════════════════════════════════════════════════════╣\\e[0m"
+    echo -e "\\e[1;35m║              NT VIP AIO TERMINAL MANAGEMENT v2.0             ║\\e[0m"
+    echo -e "\\e[1;36m╠══════════════════════════════════════════════════════════════╣\\e[0m"
+    echo -e "\\e[1;36m║                    [ MANAGEMENT DASHBOARD ]                  ║\\e[0m"
+    echo -e "\\e[1;36m╚══════════════════════════════════════════════════════════════╝\\e[0m"
 
-    # Services row
+    # Live Service Status with status colors
     printf "\\n"
-    echo -e "\\e[1;34m[ SERVICES ]\\e[0m  SSH:[ ${ssh_s} ]  NGINX:[ ${nginx_s} ]  XRAY:[ ${xray_s} ]  STUNNEL:[ ${stunnel_s} ]"
-    echo -e "\\e[1;34m                          WS-TLS:[ ${wsstun_s} ]  DROPBEAR:[ ${dropbear_s} ]\\e[0m"
+    echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
+    echo -e "\\e[1;33m [ SERVICE STATUS ]\\e[0m"
+    echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
+    echo -e "  SSH............: ${ssh_s}  │  NGINX........: ${nginx_s}  │  XRAY........: ${xray_s}"
+    echo -e "  STUNNEL........: ${stunnel_s}  │  WS-TLS.......: ${wsstun_s}  │  DROPBEAR....: ${dropbear_s}"
+    echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
+
+    # Service Alerts — check for DOWN services
+    check_service_alerts
+    if [ -n "$alerts" ]; then
+        echo -e "\\e[1;31m⚠ WARNING: The following services are DOWN: ${alerts}\\e[0m"
+        echo -e "\\e[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\e[0m"
+    fi
+
+    # Color-coded Menu Categories
     printf "\\n"
+    echo -e "\\e[1;32m┌─ CONNECTION SERVICES ─────────────────────────────────────┐\\e[0m"
+    echo -e "\\e[1;32m│  \\e[0m\\e[1;36m[1]\\e[0m  SSH / OpenVPN Menu   \\e[1;32m│  \\e[0m\\e[1;36m[2]\\e[0m  VMess Menu         \\e[1;32m│\\e[0m"
+    echo -e "\\e[1;32m│  \\e[0m\\e[1;36m[3]\\e[0m  Trojan Menu         \\e[1;32m│  \\e[0m\\e[1;36m[4]\\e[0m  Shadowsocks Menu   \\e[1;32m│\\e[0m"
+    echo -e "\\e[1;32m└────────────────────────────────────────────────────────────┘\\e[0m"
 
-    # Menu boxes — keep commands identical, only layout changes
-    echo -e "\\e[1;33m┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐\\e[0m"
-    echo -e "\\e[1;32m│ [1]  SSH Menu           │  │ [2]  VMess Menu         │  │ [3]  Trojan Menu        │\\e[0m"
-    echo -e "\\e[1;33m└─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘\\e[0m"
-    echo -e "\\e[1;33m┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐\\e[0m"
-    echo -e "\\e[1;32m│ [4]  Shadowsocks Menu   │  │ [5]  Settings           │  │ [6]  Status Service     │\\e[0m"
-    echo -e "\\e[1;33m└─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘\\e[0m"
+    echo -e "\\e[1;34m┌─ SYSTEM & UTILITIES ───────────────────────────────────────┐\\e[0m"
+    echo -e "\\e[1;34m│  \\e[0m\\e[1;36m[5]\\e[0m  Advanced Settings    \\e[1;34m│  \\e[0m\\e[1;36m[6]\\e[0m  Service Status     \\e[1;34m│\\e[0m"
+    echo -e "\\e[1;34m│  \\e[0m\\e[1;36m[7]\\e[0m  Clear Cache         \\e[1;34m│  \\e[0m\\e[1;36m[8]\\e[0m  Reboot System      \\e[1;34m│\\e[0m"
+    echo -e "\\e[1;34m└────────────────────────────────────────────────────────────┘\\e[0m"
 
-    echo -e "\\n\\e[1;34m┌──────────────────────────────────────────────────────────────┐\\e[0m"
-    echo -e "\\e[1;36m│ [7] Clear RAM Cache   [8] Reboot VPS   [x] Exit              │\\e[0m"
-    echo -e "\\e[1;34m└──────────────────────────────────────────────────────────────┘\\e[0m"
+    echo -e "\\e[1;31m┌─ EXIT ─────────────────────────────────────────────────────┐\\e[0m"
+    echo -e "\\e[1;31m│  \\e[0m\\e[1;36m[x]\\e[0m  Exit Menu                                          \\e[1;31m│\\e[0m"
+    echo -e "\\e[1;31m└────────────────────────────────────────────────────────────┘\\e[0m"
 
-    # Footer info (client/name etc.)
-    echo -e "\\n\\e[1;32m Client : $Name    Expire: $Exp2    DOMAIN: $(cat /etc/xray/domain)\\e[0m"
-    echo -e "\\e[1;33m---------------------------------------------------------------\\e[0m"
+    # Footer with user info
+    echo -e "\\n\\e[1;37m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\\e[0m"
+    echo -e "\\e[1;37m┃  User: $Name  │  Expiry: $Exp2  │  Domain: $(cat /etc/xray/domain)\\e[0m"
+    echo -e "\\e[1;37m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\\e[0m"
 
     # prompt (same behavior)
-    read -p " Select menu :  " opt
+    read -p " $(echo -e '\\e[1;33m>>\\e[0m') Select menu :  " opt
     echo ""
     case $opt in
     1) clear ; m-sshovpn ;;
