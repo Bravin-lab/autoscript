@@ -307,17 +307,41 @@ show_network_info() {
     echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
     echo -e "\e[1;32m Total Connections   \e[0m: $(get_active_connections)"
     echo -e "\e[1;32m Connected SSH Users  \e[0m: $(get_connected_users_count)"
-    
-    local users=$(get_connected_users)
-    if [ -n "$users" ]; then
-        echo -e "\e[1;32m Active Users:\e[0m"
-        echo "$users" | sed 's/^/   ├─ /'
-    else
-        echo -e "\e[1;32m Active Users:\e[0m    (None)"
-    fi
-    
     echo -e "\e[1;32m Bandwidth Usage      \e[0m: $(get_bandwidth_usage)"
     echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+}
+
+# Display detailed connected users
+show_connected_users_detail() {
+    clear
+    echo -e "\e[1;35m╔════════════════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;35m║                                                            ║\e[0m"
+    echo -e "\e[1;35m║             \e[1;33mCONNECTED SSH USERS DETAIL\e[0m\e[1;35m                 ║\e[0m"
+    echo -e "\e[1;35m║                                                            ║\e[0m"
+    echo -e "\e[1;35m╚════════════════════════════════════════════════════════════╝\e[0m"
+    echo ""
+    echo -e "\e[1;34m                   ACTIVE USERS                      \e[0m"
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    
+    local users=$(get_connected_users)
+    local count=$(get_connected_users_count)
+    
+    if [ $count -eq 0 ]; then
+        echo -e "\e[1;33m   No users currently connected\e[0m"
+    else
+        echo "$users" | nl | while read num user; do
+            if [ $num -eq $count ]; then
+                echo -e "   \e[1;32m└─ $user\e[0m"
+            else
+                echo -e "   \e[1;32m├─ $user\e[0m"
+            fi
+        done
+    fi
+    
+    echo -e "\e[1;33m────────────────────────────────────────────────────────────\e[0m"
+    echo -e "\e[1;32mTotal Connected Users: $count\e[0m"
+    echo ""
+    read -p "Press Enter to return to main menu..."
 }
 
 # Display security information
@@ -370,7 +394,8 @@ show_menu() {
     echo -e "\e[1;36m┃  [2] Menu Vmess         ┃  [6] Status Service   ┃\e[0m"
     echo -e "\e[1;36m┃  [3] Menu Trojan        ┃  [7] Clear RAM Cache  ┃\e[0m"
     echo -e "\e[1;36m┃  [4] Menu Shadowsocks   ┃  [8] Reboot VPS       ┃\e[0m"
-    echo -e "\e[1;36m┃  [x] Exit Script        ┃                      ┃\e[0m"
+    echo -e "\e[1;36m┃  [9] View Connected     ┃  [x] Exit Script      ┃\e[0m"
+    echo -e "\e[1;36m┃      Users              ┃                      ┃\e[0m"
     echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
     echo -e "\e[1;32m Client Name \e[0m: $Name"
     echo -e "\e[1;32m Expired     \e[0m: $Exp2"
@@ -389,6 +414,7 @@ show_menu() {
     6) clear ; running ;;
     7) clear ; clearcache ;;
     8) clear ; /sbin/reboot ;;
+    9) show_connected_users_detail ;;
     x) exit ;;
     *) echo "Invalid selection" ; sleep 1 ;;
     esac
