@@ -105,11 +105,11 @@ show_menu() {
     echo -e "\e[1;34m                  ┃      MAIN  MENU       ┃                  \e[0m"
     echo -e "\e[1;34m                  ┗━━━━━━━━━━━━━━━━━━━━━━━┛                  \e[0m"
     echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
-    echo -e "\e[1;36m┃  [1] Menu SSH           ┃  [5] Menu Setting     ┃\e[0m"
-    echo -e "\e[1;36m┃  [2] Menu Vmess         ┃  [6] Status Service   ┃\e[0m"
-    echo -e "\e[1;36m┃  [3] Menu Trojan        ┃  [7] Clear RAM Cache  ┃\e[0m"
-    echo -e "\e[1;36m┃  [4] Menu Shadowsocks   ┃  [8] Reboot VPS       ┃\e[0m"
-    echo -e "\e[1;36m┃  [x] Exit Script        ┃                      ┃\e[0m"
+    echo -e "\e[1;36m┃  [1] Menu SSH           ┃  [6] Status Service   ┃\e[0m"
+    echo -e "\e[1;36m┃  [2] Menu Vmess         ┃  [7] Clear RAM Cache  ┃\e[0m"
+    echo -e "\e[1;36m┃  [3] Menu Vless         ┃  [8] Reboot VPS       ┃\e[0m"
+    echo -e "\e[1;36m┃  [4] Menu Trojan        ┃  [9] Exit Script      ┃\e[0m"
+    echo -e "\e[1;36m┃  [5] Menu Shadowsocks   ┃                      ┃\e[0m"
     echo -e "\e[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
     echo -e "\e[1;32m Client Name \e[0m: $Name"
     echo -e "\e[1;32m Expired     \e[0m: $Exp2"
@@ -137,12 +137,13 @@ show_menu() {
     case $opt in
     1) clear ; m-sshovpn ;;
     2) clear ; m-vmess ;;
-    3) clear ; m-trojan ;;
-    4) clear ; m-ssws ;;
-    5) clear ; m-system ;;
-    6) clear ; running ;;
-    7) clear ; clearcache ;;
-    8) clear ; /sbin/reboot ;;
+    3) clear ; m-vless ;;
+    4) clear ; m-trojan ;;
+    5) clear ; m-ssws ;;
+    6) clear ; m-system ;;
+    7) clear ; running ;;
+    8) clear ; clearcache ;;
+    9) clear ; /sbin/reboot ;;
     x) exit ;;
     *) echo "Invalid selection" ; sleep 1 ;;
     esac
