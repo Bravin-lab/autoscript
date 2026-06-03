@@ -6,13 +6,30 @@ icon_bad() { echo -e "\033[0;31m✘\033[0m"; }
 
 # Function to count connected users
 # Uses `who` output (works for SSH/Dropbear sessions)
+count_openvpn_clients() {
+    local count=0
+    local log_file
+
+    for log_file in /etc/openvpn/server/openvpn-tcp.log /etc/openvpn/server/openvpn-udp.log; do
+        if [ -f "$log_file" ]; then
+            count=$((count + $(grep -c '^CLIENT_LIST' "$log_file" 2>/dev/null || true)))
+        fi
+    done
+
+    echo "$count"
+}
+
 get_connected_users() {
+    local ssh_users=0
+    local openvpn_users=0
+
     if command -v who >/dev/null 2>&1; then
         # who output lines correspond to active logged-in sessions
-        who | awk 'NF>=6{c++} END{print c+0}'
-    else
-        echo 0
+        ssh_users=$(who | awk 'NF{c++} END{print c+0}')
     fi
+
+    openvpn_users=$(count_openvpn_clients)
+    echo $((ssh_users + openvpn_users))
 }
 
 # Function to get service status with tick/cross
