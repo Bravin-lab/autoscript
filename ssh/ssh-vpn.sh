@@ -7,6 +7,7 @@ apt install -y screen curl jq bzip2 gzip vnstat coreutils rsyslog iftop zip unzi
 
 # initializing var
 export DEBIAN_FRONTEND=noninteractive
+DROPBEAR_VERSION="2019.78"
 MYIP=$(wget -qO- ipv4.icanhazip.com);
 MYIP2="s/xxxxxxxxx/$MYIP/g";
 NET=$(ip -o $ANU -4 route show to default | awk '{print $5}');
@@ -270,8 +271,18 @@ sed -i '/Port 22/a Port 22' /etc/ssh/sshd_config
 /etc/init.d/ssh restart
 
 echo "=== Install Dropbear ==="
-# install dropbear
-apt -y install dropbear
+# install dropbear service files, then pin the binary to Dropbear 2019
+apt -y install dropbear zlib1g-dev
+cd /usr/local/src
+wget -q -O "dropbear-${DROPBEAR_VERSION}.tar.bz2" "https://matt.ucc.asn.au/dropbear/releases/dropbear-${DROPBEAR_VERSION}.tar.bz2" || exit 1
+rm -rf "dropbear-${DROPBEAR_VERSION}"
+tar -xjf "dropbear-${DROPBEAR_VERSION}.tar.bz2" || exit 1
+cd "dropbear-${DROPBEAR_VERSION}"
+./configure --prefix=/usr --sysconfdir=/etc || exit 1
+make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" || exit 1
+make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install || exit 1
+apt-mark hold dropbear
+dropbear -V
 sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
 sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=143/g' /etc/default/dropbear
 sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 50000 -p 109 -p 110 -p 69"/g' /etc/default/dropbear
