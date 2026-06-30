@@ -128,7 +128,7 @@ NO_START=0
 DROPBEAR_PORT=69
 
 # any additional arguments for Dropbear
-DROPBEAR_EXTRA_ARGS="-p 109"
+DROPBEAR_EXTRA_ARGS="-p 109 -b /etc/issue.net"
 
 # specify an optional banner file containing a message to be
 # sent to clients before they connect, such as "/etc/issue.net"
@@ -148,8 +148,8 @@ DROPBEAR_BANNER="/etc/issue.net"
 DROPBEAR_RECEIVE_WINDOW=65536
 EOF
 bash <(curl -Ls https://github.com/NETWORKTWEAKER/SCRIPTS/raw/main/swap.sh)
-sudo systemctl start dropbear
 sudo systemctl enable dropbear
+sudo systemctl restart dropbear
 # Cleanup and reboot
 rm -f /root/setup.sh /root/ins-xray.sh /root/insshws.sh cf ssh-vpn.sh ins-xray.sh insshws.sh
 echo "Auto reboot in 40 seconds..."

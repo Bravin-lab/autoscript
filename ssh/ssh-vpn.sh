@@ -285,7 +285,7 @@ apt-mark hold dropbear
 dropbear -V
 sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
 sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=143/g' /etc/default/dropbear
-sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 50000 -p 109 -p 110 -p 69"/g' /etc/default/dropbear
+sed -i 's@DROPBEAR_EXTRA_ARGS=@DROPBEAR_EXTRA_ARGS="-p 50000 -p 109 -p 110 -p 69"@g' /etc/default/dropbear
 echo "/bin/false" >> /etc/shells
 echo "/usr/sbin/nologin" >> /etc/shells
 /etc/init.d/ssh restart
@@ -390,6 +390,7 @@ echo 'Please send in your comments and/or suggestions to zaf@vsnl.com'
 wget -O /etc/issue.net "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/banner/banner.conf"
 echo "Banner /etc/issue.net" >> /etc/ssh/sshd_config
 sed -i 's@DROPBEAR_BANNER=""@DROPBEAR_BANNER="/etc/issue.net"@g' /etc/default/dropbear
+grep -q -- '-b /etc/issue.net' /etc/default/dropbear || sed -i 's@DROPBEAR_EXTRA_ARGS="@DROPBEAR_EXTRA_ARGS="-b /etc/issue.net @g' /etc/default/dropbear
 
 # blokir torrent
 iptables -A FORWARD -m string --string "get_peers" --algo bm -j DROP
