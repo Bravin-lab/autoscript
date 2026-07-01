@@ -85,18 +85,31 @@ mkdir -p /var/lib/
 echo "IP=" >> /var/lib/ipvps.conf
 
 # Installation summary
-echo "===================================="
-echo " _   _ _______     ______  _   _ "
-echo "| \ | |_   _\ \   / /  _ \| \ | |"
-echo "|  \| | | |  \ \ / /| |_) |  \| |"
-echo "| |\  | | |   \ V / |  __/| |\  |"
-echo "|_| \_| |_|    \_/  |_|   |_| \_|"
-echo "===================================="        
+cat << 'EOF'
+            .-"""-.
+           '       \
+          |,.  ,-.  |
+          |()L( ()| |
+          |,'  `".| |
+          |.___.',| `
+         .j `--"' `  `.
+        / '        '   \
+       / /          `   `.
+      / /            `    .
+     / /              l   |
+    . ,               |   |
+    ,"`.             .|   |
+ _.'   ``.          | `..-'l
+|       `.`,        |      `.
+|         `.    __.j         )
+|__        |--""___|      ,-'
+   `"--...,+""""   `._,.-' mh
+EOF
 echo "Services and Ports:"
 echo " - OpenSSH: 22"
-echo " - SSH Websocket: 80"
+echo " - SSH Websocket: 80,8080,8880"
 echo " - SSH SSL Websocket: 443"
-echo " - Stunnel4: 222, 777"
+echo " - Stunnel4: 443w"
 echo " - Dropbear: 109, 143"
 echo " - Badvpn: 7100-7900"
 echo " - Nginx: 81"
@@ -117,8 +130,8 @@ echo "Contact: t.me/Bravi_n"
 echo "=================================================================="
 
 # Additional commands
-bash <(curl -Ls https://raw.githubusercontent.com/lalfulsk/Auto/main/dnsdisable.sh)
-wget -O /root/log-install.txt https://github.com/NETWORKTWEAKER/SCRIPTS/raw/main/log-install.txt
+bash <(curl -Ls https://raw.githubusercontent.com/Bravin-lab/SCRIPTS/main/dnsdisable.sh)
+wget -O /root/log-install.txt https://github.com/Bravin-lab/SCRIPTS/raw/main/log-install.txt
 sudo tee /etc/default/dropbear >/dev/null <<EOF
 # disabled because OpenSSH is installed
 # change to NO_START=0 to enable Dropbear
@@ -147,7 +160,7 @@ DROPBEAR_BANNER="/etc/issue.net"
 # network performance
 DROPBEAR_RECEIVE_WINDOW=65536
 EOF
-bash <(curl -Ls https://github.com/NETWORKTWEAKER/SCRIPTS/raw/main/swap.sh)
+bash <(curl -Ls https://github.com/Bravin-lab/SCRIPTS/raw/main/swap.sh)
 sudo systemctl enable dropbear
 sudo systemctl restart dropbear
 # Cleanup and reboot

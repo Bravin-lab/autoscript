@@ -428,6 +428,10 @@ wget -O usernew "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/
 wget -O trial "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/trial.sh"
 wget -O renew "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/renew.sh"
 wget -O hapus "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/hapus.sh"
+wget -O udp-usernew "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/usernew.sh"
+wget -O udp-trial "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/trial.sh"
+wget -O udp-renew "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/renew.sh"
+wget -O udp-hapus "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/hapus.sh"
 wget -O cek "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/cek.sh"
 wget -O member "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/member.sh"
 wget -O delete "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/delete.sh"
@@ -467,6 +471,10 @@ chmod +x usernew
 chmod +x trial
 chmod +x renew
 chmod +x hapus
+chmod +x udp-usernew
+chmod +x udp-trial
+chmod +x udp-renew
+chmod +x udp-hapus
 chmod +x cek
 chmod +x member
 chmod +x delete

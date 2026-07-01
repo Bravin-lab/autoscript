@@ -17,21 +17,27 @@ rm -rf udp.sh
 rm -rf vpn.sh
 rm -rf openvpn.sh
 rm -rf log-install.txt
-rm -rf /usr/bin/usernew
-rm -rf /usr/bin/trial
+rm -rf /usr/bin/udp-usernew
+rm -rf /usr/bin/udp-trial
+rm -rf /usr/bin/udp-renew
+rm -rf /usr/bin/udp-hapus
 rm -rf /root/domain
 echo "\e[1;32m Update Menu.. \e[0m"
 sleep 1
-wget -q -O /usr/bin/usernew https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/ssh/usernew.sh
-wget -q -O /usr/bin/trial https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/ssh/trial.sh
+wget -q -O /usr/bin/udp-usernew https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/usernew.sh
+wget -q -O /usr/bin/udp-trial https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/trial.sh
+wget -q -O /usr/bin/udp-renew https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/renew.sh
+wget -q -O /usr/bin/udp-hapus https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp/hapus.sh
 echo "\e[1;32m Proses Download Script Slowdns.. \e[0m"
 wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/slowdns/slowdns.sh && chmod +x slowdns.sh && ./slowdns.sh
 sleep 1
 echo "\e[1;32m Proses Download Script OpenVPN.. \e[0m"
 wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/openvpn/openvpn.sh && chmod +x openvpn.sh && ./openvpn.sh
 sleep 1
-chmod +x /usr/bin/usernew
-chmod +x /usr/bin/trial
+chmod +x /usr/bin/udp-usernew
+chmod +x /usr/bin/udp-trial
+chmod +x /usr/bin/udp-renew
+chmod +x /usr/bin/udp-hapus
 rm -rf /root/udp
 mkdir -p /root/udp
 # install udp-custom
@@ -84,7 +90,7 @@ Restart=always
 RestartSec=2s
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 EOF
 else
 cat <<EOF > /etc/systemd/system/udp-custom.service
@@ -100,18 +106,20 @@ Restart=always
 RestartSec=2s
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 EOF
 fi
 
+systemctl daemon-reload
 echo start service udp-custom
-systemctl start udp-custom &>/dev/null
+systemctl enable udp-custom &>/dev/null
+systemctl restart udp-custom &>/dev/null
 
 echo enable service udp-custom
-systemctl enable udp-custom &>/dev/null
+systemctl is-active --quiet udp-custom || systemctl start udp-custom &>/dev/null
 
 echo ""
-sleep 0,5
+sleep 0.5
 clear
 cd
 rm -rf udp.sh

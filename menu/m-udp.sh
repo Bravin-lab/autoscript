@@ -35,10 +35,10 @@ echo -e "\e[33m-----------------------------------\033[0m"
 echo -e "\E[0;100;33m          NT UDP MENU          \E[0m"
 echo -e "\e[33m-----------------------------------\033[0m"
 echo -e ""
-echo -e " [\e[36m1\e[0m] Create UDP Account"
-echo -e " [\e[36m2\e[0m] Trial UDP Account"
-echo -e " [\e[36m3\e[0m] Renew UDP Account"
-echo -e " [\e[36m4\e[0m] Delete UDP Account"
+echo -e " [\e[36m1\e[0m] Create UDP Custom Account"
+echo -e " [\e[36m2\e[0m] Trial UDP Custom Account"
+echo -e " [\e[36m3\e[0m] Renew UDP Custom Account"
+echo -e " [\e[36m4\e[0m] Delete UDP Custom Account"
 echo -e " [\e[36m5\e[0m] Check UDP Custom Status"
 echo -e " [\e[36m6\e[0m] Restart UDP Custom"
 echo -e " [\e[36m7\e[0m] Start UDP Custom"
@@ -56,10 +56,10 @@ read -p " Select menu :  " opt
 echo -e ""
 
 case $opt in
-1) clear ; usernew ; exit ;;
-2) clear ; trial ; exit ;;
-3) clear ; renew ; exit ;;
-4) clear ; hapus ; exit ;;
+1) clear ; udp-usernew ; exit ;;
+2) clear ; udp-trial ; exit ;;
+3) clear ; udp-renew ; exit ;;
+4) clear ; udp-hapus ; exit ;;
 5) clear ; systemctl status udp-custom.service --no-pager ; pause_menu ;;
 6) clear ; service_action restart ;;
 7) clear ; service_action start ;;
