@@ -43,24 +43,36 @@ fi
 # Domain configuration
 echo "1. Use Our NT Domain Random"
 echo "2. Choose Your Own Domain"
-read -rp "Input 1 or 2: " dns
-if [ "$dns" -eq 1 ]; then
-    # Download cf script and convert line endings
-    wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/cf
-    dos2unix cf
-    bash cf
-elif [ "$dns" -eq 2 ]; then
-    read -rp "Enter Your Domain: " dom
-    echo "$dom" > /var/lib/ipvps.conf
-    echo "$dom" > /root/scdomain
-    echo "$dom" > /etc/xray/scdomain
-    echo "$dom" > /etc/xray/domain
-    echo "$dom" > /etc/v2ray/domain
-    echo "$dom" > /root/domain
-else
-    echo "Not Found Argument"
-    exit 1
-fi
+while true; do
+    read -rp "Input 1 or 2: " dns
+    if [ "$dns" = "1" ]; then
+        # Download cf script and convert line endings
+        wget https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/cf
+        dos2unix cf
+        bash cf
+        break
+    elif [ "$dns" = "2" ]; then
+        while true; do
+            read -rp "Enter Your Domain: " dom
+            if [ -n "$dom" ]; then
+                echo "$dom" > /var/lib/ipvps.conf
+                echo "$dom" > /root/scdomain
+                echo "$dom" > /etc/xray/scdomain
+                echo "$dom" > /etc/xray/domain
+                echo "$dom" > /etc/v2ray/domain
+                echo "$dom" > /root/domain
+                break
+            fi
+
+            echo "Domain cannot be empty. Please enter a valid domain."
+        done
+        break
+    else
+        echo "Not Found Argument"
+    fi
+done
+
+echo "Domain configuration completed. Continuing installation..."
 
 # Install services
 wget -q https://raw.githubusercontent.com/Bravin-lab/autoscript/master/ssh/ssh-vpn.sh
