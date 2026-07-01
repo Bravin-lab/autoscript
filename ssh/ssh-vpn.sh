@@ -419,6 +419,8 @@ wget -O running "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/
 wget -O clearcache "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/clearcache.sh"
 wget -O m-ssws "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-ssws.sh"
 wget -O m-trojan "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-trojan.sh"
+wget -O m-udp "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-udp.sh"
+wget -O ins-udp "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/udp-custom/udp.sh"
 
 # menu ssh ovpn
 wget -O m-sshovpn "https://raw.githubusercontent.com/Bravin-lab/autoscript/master/menu/m-sshovpn.sh"
@@ -457,6 +459,8 @@ chmod +x running
 chmod +x clearcache
 chmod +x m-ssws
 chmod +x m-trojan
+chmod +x m-udp
+chmod +x ins-udp
 
 chmod +x m-sshovpn
 chmod +x usernew

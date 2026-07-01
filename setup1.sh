@@ -113,7 +113,7 @@ echo " - Vless gRPC: 443"
 echo " - Trojan gRPC: 443"
 echo " - Shadowsocks gRPC: 443"
 echo "=================================================================="
-echo "Contact: t.me/networktweakerop"
+echo "Contact: t.me/Bravi_n"
 echo "=================================================================="
 
 # Additional commands
