@@ -66,6 +66,49 @@ get_cpu_usage() {
     cpu_usage+=" %"
 }
 
+draw_right_mascot() {
+    local start_row="$1"
+    local cols
+    local mascot_width=31
+    local min_cols=96
+    local start_col
+    local i=0
+
+    cols=$(tput cols 2>/dev/null || echo 80)
+    if [ -z "$cols" ] || [ "$cols" -lt "$min_cols" ]; then
+        return 0
+    fi
+
+    start_col=$((cols - mascot_width - 1))
+    [ "$start_col" -lt 56 ] && return 0
+
+    printf '\e[s'
+    while IFS= read -r line; do
+        printf '\e[%s;%sH\e[1;35m%s\e[0m' "$((start_row + i))" "$start_col" "$line"
+        i=$((i + 1))
+    done << 'EOF'
+            .-"""-.
+           '       \
+          |,.  ,-.  |
+          |()L( ()| |
+          |,'  `".| |
+          |.___.',| `
+         .j `--"' `  `.
+        / '        '   \
+       / /          `   `.
+      / /            `    .
+     / /              l   |
+    . ,               |   |
+    ,"`.             .|   |
+ _.'   ``.          | `..-'l
+|       `.`,        |      `.
+|         `.    __.j         )
+|__        |--""___|      ,-'
+   `"--...,+""""   `._,.-' mh
+EOF
+    printf '\e[u'
+}
+
 show_vps_info() {
     clear
     domain=$(cat /etc/xray/domain 2>/dev/null || echo "Unknown")
@@ -77,28 +120,30 @@ show_vps_info() {
         LOC="Unknown"
     fi
 
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;34m                     NT VIP AIO                    \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;32m OS            \e[0m: $(hostnamectl | grep "Operating System" | cut -d ' ' -f5-)"
-    echo -e "\e[1;32m Uptime        \e[0m: $uptime"
-    echo -e "\e[1;32m Public IP     \e[0m: $IPVPS"
-    echo -e "\e[1;32m Country       \e[0m: $LOC"
-    echo -e "\e[1;32m DOMAIN        \e[0m: $domain"
-    echo -e "\e[1;32m DATE & TIME   \e[0m: $DATE2"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;36m║\e[1;33m         AUTOSCRIPT KINGS                         \e[0m\e[1;36m║\e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    draw_right_mascot 3
+    echo ""
+    echo -e "\e[1;32m  OS            \e[0m: $(hostnamectl | grep "Operating System" | cut -d ' ' -f5-)"
+    echo -e "\e[1;32m  Uptime        \e[0m: $uptime"
+    echo -e "\e[1;32m  Public IP     \e[0m: $IPVPS"
+    echo -e "\e[1;32m  Country       \e[0m: $LOC"
+    echo -e "\e[1;32m  Domain        \e[0m: $domain"
+    echo -e "\e[1;32m  Date & Time   \e[0m: $DATE2"
+    echo ""
 }
 
 show_cpu_ram_info() {
     get_ram_info
     get_cpu_usage
 
-    echo -e "\e[1;34m                   NT CPU/RAM INFO                  \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;32m CPU USAGE   \e[0m: $cpu_usage"
-    echo -e "\e[1;32m RAM USED    \e[0m: ${uram} MB"
-    echo -e "\e[1;32m RAM TOTAL   \e[0m: ${tram} MB"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;36m║\e[1;33m               SYSTEM RESOURCES               \e[0m\e[1;36m║\e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo -e "\e[1;32m  CPU Usage   \e[0m: $cpu_usage"
+    echo -e "\e[1;32m  RAM Used    \e[0m: ${uram} MB / ${tram} MB"
+    echo ""
 }
 
 show_menu() {
@@ -106,32 +151,43 @@ show_menu() {
     show_vps_info
     show_cpu_ram_info
 
-    echo -e "\e[1;34m                       MAIN MENU                    \e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;36m  [1] Menu SSH           [6] Menu UDP\e[0m"
-    echo -e "\e[1;36m  [2] Menu Vmess         [7] System Menu\e[0m"
-    echo -e "\e[1;36m  [3] Menu Vless         [8] Status Service\e[0m"
-    echo -e "\e[1;36m  [4] Menu Trojan        [9] Clear RAM Cache\e[0m"
-    echo -e "\e[1;36m  [5] Menu Shadowsocks   [10] Reboot VPS\e[0m"
-    echo -e "\e[1;36m                         [11] Exit Script\e[0m"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e "\e[1;32m Client Name \e[0m: $Name"
-    echo -e "\e[1;32m Expired     \e[0m: $Exp2"
-    echo -e "\e[1;32m Connected   \e[0m: $(get_connected_users) users"
-
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "XRAY" "xray.service")"
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "Dropbear" "dropbear.service" "/etc/init.d/dropbear")"
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "ws-stunnel" "ws-stunnel.service")"
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "ws-dropbear" "ws-dropbear.service")"
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "udp-custom" "udp-custom.service")"
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "fail2ban" "fail2ban.service" "/etc/init.d/fail2ban")"
-    echo -e "\e[1;32m Service     \e[0m: $(get_service_status "cron" "cron.service" "/etc/init.d/cron")"
-
-    echo -e "\e[1;32m POWERED BY  \e[0m: BRAVIN"
-    echo -e "\e[1;32m MADE BY     \e[0m: BRAVIN"
-    echo -e "\e[1;33m -------------------------------------------------\e[0m"
-    echo -e ""
-    read -p " Select menu :  " opt
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;36m║\e[1;33m               PROTOCOL MANAGEMENT            \e[0m\e[1;36m║\e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo -e "\e[1;36m  [1] Menu SSH           [4] Menu Trojan\e[0m"
+    echo -e "\e[1;36m  [2] Menu Vmess         [5] Menu Shadowsocks\e[0m"
+    echo -e "\e[1;36m  [3] Menu Vless         [6] Menu UDP\e[0m"
+    echo ""
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;36m║\e[1;33m               SYSTEM & UTILITIES              \e[0m\e[1;36m║\e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo -e "\e[1;36m  [7] System Menu        [9] Clear RAM Cache\e[0m"
+    echo -e "\e[1;36m  [8] Status Service     [10] Reboot VPS\e[0m"
+    echo -e "\e[1;36m  [11] Exit\e[0m"
+    echo ""
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;36m║\e[1;33m                ACCOUNT DETAILS               \e[0m\e[1;36m║\e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo -e "\e[1;32m  Client Name \e[0m: \e[1;33m$Name\e[0m"
+    echo -e "\e[1;32m  Expired     \e[0m: \e[1;33m$Exp2\e[0m"
+    echo -e "\e[1;32m  Connected   \e[0m: \e[1;33m$(get_connected_users) users\e[0m"
+    echo ""
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;36m║\e[1;33m               SERVICE STATUS                \e[0m\e[1;36m║\e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo -e "\e[1;32m  XRAY       \e[0m: $(get_service_status "●" "xray.service")"
+    echo -e "\e[1;32m  Dropbear   \e[0m: $(get_service_status "●" "dropbear.service" "/etc/init.d/dropbear")"
+    echo -e "\e[1;32m  WS Stunnel \e[0m: $(get_service_status "●" "ws-stunnel.service")"
+    echo -e "\e[1;32m  WS Dropbear\e[0m: $(get_service_status "●" "ws-dropbear.service")"
+    echo -e "\e[1;32m  UDP Custom \e[0m: $(get_service_status "●" "udp-custom.service")"
+    echo -e "\e[1;32m  Fail2Ban   \e[0m: $(get_service_status "●" "fail2ban.service" "/etc/init.d/fail2ban")"
+    echo -e "\e[1;32m  Cron       \e[0m: $(get_service_status "●" "cron.service" "/etc/init.d/cron")"
+    echo ""
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    echo -e "\e[1;35m           Powered By: BRAVIN | Made By: BRAVIN    \e[0m"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo ""
+    read -p " $(echo -e '\e[1;36m▶\e[0m Select menu: ')" opt
     echo ""
     case $opt in
     1) clear ; m-sshovpn ;;
@@ -146,7 +202,7 @@ show_menu() {
     10) clear ; /sbin/reboot ;;
     11) exit ;;
     x) exit ;;
-    *) echo "Invalid selection" ; sleep 1 ;;
+    *) echo "$(echo -e '\e[1;31m✗\e[0m Invalid selection. Press enter to continue...')" ; read -r ; show_menu ;;
     esac
 }
 

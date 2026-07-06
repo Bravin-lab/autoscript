@@ -38,7 +38,7 @@ PID=`ps -ef |grep -v grep | grep sshws |awk '{print $2}'`
 
 if [[ ! -z "${PID}" ]]; then
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m" | tee -a /etc/log-create-ssh.log
-echo -e "\E[0;41;36m            NT SSH Account            \E[0m" | tee -a /etc/log-create-ssh.log
+echo -e "\E[0;41;36m            SSH Account            \E[0m" | tee -a /etc/log-create-ssh.log
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m" | tee -a /etc/log-create-ssh.log
 echo -e "Username    : $Login" | tee -a /etc/log-create-ssh.log
 echo -e "Password    : $Pass" | tee -a /etc/log-create-ssh.log
@@ -65,7 +65,7 @@ echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━�
 else
 
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m" | tee -a /etc/log-create-ssh.log
-echo -e "\E[0;41;36m            NT SSH Account            \E[0m" | tee -a /etc/log-create-ssh.log
+echo -e "\E[0;41;36m             SSH Account            \E[0m" | tee -a /etc/log-create-ssh.log
 echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m" | tee -a /etc/log-create-ssh.log
 echo -e "Username    : $Login" | tee -a /etc/log-create-ssh.log
 echo -e "Password    : $Pass" | tee -a /etc/log-create-ssh.log
