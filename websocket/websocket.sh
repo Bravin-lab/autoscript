@@ -3,7 +3,7 @@
 # Quick Setup | Script Setup Manager
 # Edition : Stable Edition 1.0
 # Auther  : BRAVIN 
-# (C) Copyright 2023
+# (C) Copyright 2026
 # =========================================
 clear
 echo Installing Websocket-SSH Python
@@ -13,7 +13,7 @@ sleep 2
 cd
 
 # // GIT USER
-GitUser="NETWORKTWEAKER"
+GitUser="Bravin-lab"
 
 # // SYSTEM WEBSOCKET HTTPS 443
 cat <<EOF> /etc/systemd/system/ws-https.service
