@@ -54,6 +54,15 @@ get_service_status() {
     echo "$(icon_bad) $label"
 }
 
+# FIX #1: get_cpu_usage was called but never defined. Added here.
+get_cpu_usage() {
+    if command -v top >/dev/null 2>&1; then
+        cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8"%"}')
+    else
+        cpu_usage="N/A"
+    fi
+}
+
 get_ram_info() {
     ram_info=$(free -m | awk 'NR==2{print $2,$3}')
     tram=$(echo "$ram_info" | awk '{print $1}')
@@ -62,7 +71,7 @@ get_ram_info() {
 
 draw_box_title() {
     local title="$1"
-    local inner_width=47
+    local inner_width=51
     local title_len=${#title}
     local left_pad=0
     local right_pad=0
@@ -72,25 +81,96 @@ draw_box_title() {
         right_pad=$((inner_width - title_len - left_pad))
     fi
 
-    printf '\e[1;36m╔═════════════════════════════════════════════════╗\e[0m\n'
-    printf '\e[1;36m║\e[1;33m%*s%s%*s\e[0m\e[1;36m║\e[0m\n' "$left_pad" "" "$title" "$right_pad" ""
-    printf '\e[1;36m╚═════════════════════════════════════════════════╝\e[0m\n'
+    printf '\033[1;36m+%s+\033[0m\n' "$(printf '=%.0s' $(seq 1 $inner_width))"
+    printf '\033[1;36m|\033[1;33m%*s%s%*s\033[0m\033[1;36m|\033[0m\n' "$left_pad" "" "$title" "$right_pad" ""
+    printf '\033[1;36m+%s+\033[0m\n' "$(printf '=%.0s' $(seq 1 $inner_width))"
 }
 
 draw_value_line() {
     local label="$1"
     local value="$2"
-    printf '\e[1;32m  %-13s\e[0m: %b\n' "$label" "$value"
+    printf '\033[1;32m  %-13s\033[0m: %b\n' "$label" "$value"
 }
 
 draw_menu_row() {
     local left="$1"
     local right="$2"
-    printf '\e[1;36m  %-26s %-26s\e[0m\n' "$left" "$right"
+    printf '\033[1;36m  %-26s %-26s\033[0m\n' "$left" "$right"
 }
 
 draw_right_mascot() {
     return 0
+}
+
+# STYLE: block-character progress bar for CPU/RAM usage.
+# Purely presentational — takes a percentage in, returns colored bar text out.
+draw_bar() {
+    local percent="$1"       # 0-100
+    local width="${2:-20}"   # bar width in characters
+    local filled empty bar color
+
+    # clamp to 0-100 in case of odd input
+    [ "$percent" -lt 0 ] 2>/dev/null && percent=0
+    [ "$percent" -gt 100 ] 2>/dev/null && percent=100
+
+    filled=$(( percent * width / 100 ))
+    empty=$(( width - filled ))
+
+    color="\033[0;32m"  # green
+    if [ "$percent" -ge 80 ]; then
+        color="\033[0;31m"   # red
+    elif [ "$percent" -ge 50 ]; then
+        color="\033[0;33m"   # yellow
+    fi
+
+    bar=""
+    if [ "$filled" -gt 0 ]; then
+        bar=$(printf '█%.0s' $(seq 1 $filled) 2>/dev/null)
+    fi
+    if [ "$empty" -gt 0 ]; then
+        bar+=$(printf '░%.0s' $(seq 1 $empty) 2>/dev/null)
+    fi
+
+    printf "${color}%s\033[0m" "$bar"
+}
+
+# FIX #2: network info (IP/ISP/city/country) is now fetched ONCE and cached
+# to a file with a TTL, instead of hitting 4 external APIs on every redraw.
+VPS_INFO_CACHE="/tmp/.vps_info_cache"
+VPS_INFO_TTL=3600  # seconds; refresh once an hour
+
+refresh_vps_info_cache() {
+    local ipvps isp city loc
+    ipvps=$(curl -s --max-time 3 ifconfig.me)
+    isp=$(curl -s --max-time 3 ifconfig.co/org 2>/dev/null || echo "Unknown")
+    city=$(curl -s --max-time 3 "https://ipapi.co/${ipvps}/city" 2>/dev/null || echo "Unknown")
+
+    if command -v jq >/dev/null 2>&1; then
+        loc=$(curl -sS --max-time 3 "https://api.country.is/${ipvps}" | jq -r '.country' 2>/dev/null)
+    else
+        loc=""
+    fi
+    if [ -z "$loc" ] || [ "$loc" = "null" ]; then
+        loc="Unknown"
+    fi
+
+    printf '%s\n%s\n%s\n%s\n%s\n' "$ipvps" "$isp" "$city" "$loc" "$(date +%s)" > "$VPS_INFO_CACHE"
+}
+
+load_vps_info_cache() {
+    local cache_time now
+    if [ -f "$VPS_INFO_CACHE" ]; then
+        cache_time=$(sed -n '5p' "$VPS_INFO_CACHE")
+        now=$(date +%s)
+        if [ -n "$cache_time" ] && [ $((now - cache_time)) -lt "$VPS_INFO_TTL" ]; then
+            IPVPS=$(sed -n '1p' "$VPS_INFO_CACHE")
+            ISP=$(sed -n '2p' "$VPS_INFO_CACHE")
+            CITY=$(sed -n '3p' "$VPS_INFO_CACHE")
+            LOC=$(sed -n '4p' "$VPS_INFO_CACHE")
+            return 0
+        fi
+    fi
+    return 1
 }
 
 show_vps_info() {
@@ -99,22 +179,19 @@ show_vps_info() {
     uptime=$(uptime -p | cut -d " " -f 2-10)
     DATE2=$(date +%d/%m/%Y)
     TIME2=$(date +%H:%M:%S)
-    IPVPS=$(curl -s ifconfig.me)
-    ISP=$(curl -s ifconfig.co/org 2>/dev/null || echo "Unknown")
-    CITY=$(curl -s "https://ipapi.co/${IPVPS}/city" 2>/dev/null || echo "Unknown")
-    LOC=$(curl -sS "https://api.country.is/${IPVPS}" | jq -r '.country' 2>/dev/null)
-    if [ -z "$LOC" ] || [ "$LOC" = "null" ]; then
-        LOC="Unknown"
+
+    if ! load_vps_info_cache; then
+        refresh_vps_info_cache
+        load_vps_info_cache
     fi
 
     draw_box_title "AUTOSCRIPT KINGS"
     echo ""
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    draw_box_title "SERVER INFO"
     draw_value_line "ISP" "$ISP"
     draw_value_line "CITY" "$CITY"
     draw_value_line "DATE" "$DATE2"
     draw_value_line "TIME" "$TIME2"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
     echo ""
 }
 
@@ -122,9 +199,21 @@ show_cpu_ram_info() {
     get_ram_info
     get_cpu_usage
 
+    # STYLE: strip trailing % from cpu_usage for bar math, but the
+    # original $cpu_usage value/format is still used as fallback display text.
+    local cpu_pct="${cpu_usage%\%}"
+    local ram_pct=0
+    if [ "$tram" -gt 0 ] 2>/dev/null; then
+        ram_pct=$(( uram * 100 / tram ))
+    fi
+
     draw_box_title "SYSTEM RESOURCES"
-    draw_value_line "CPU Usage" "$cpu_usage"
-    draw_value_line "RAM Used" "${uram} MB / ${tram} MB"
+    if [[ "$cpu_pct" =~ ^[0-9]+$ ]]; then
+        printf '\033[1;32m  %-13s\033[0m: [%s] %s%%\n' "CPU Usage" "$(draw_bar "$cpu_pct" 20)" "$cpu_pct"
+    else
+        draw_value_line "CPU Usage" "$cpu_usage"
+    fi
+    printf '\033[1;32m  %-13s\033[0m: [%s] %s MB / %s MB\n' "RAM Used" "$(draw_bar "$ram_pct" 20)" "$uram" "$tram"
     echo ""
 }
 
@@ -141,12 +230,12 @@ show_menu() {
     draw_box_title "SYSTEM & UTILITIES"
     draw_menu_row "[7] System Menu" "[9] Clear RAM Cache"
     draw_menu_row "[8] Status Service" "[10] Reboot VPS"
-    printf '\e[1;36m  [11] Exit\e[0m\n'
+    printf '\033[1;36m  [11] Exit\033[0m\n'
     echo ""
     draw_box_title "ACCOUNT DETAILS"
-    draw_value_line "Client Name" "\e[1;33m$Name\e[0m"
-    draw_value_line "Expired" "\e[1;33m$Exp2\e[0m"
-    draw_value_line "Connected" "\e[1;33m$(get_connected_users) users\e[0m"
+    draw_value_line "Client Name" "\033[1;33m$Name\033[0m"
+    draw_value_line "Expired" "\033[1;33m$Exp2\033[0m"
+    draw_value_line "Connected" "\033[1;33m$(get_connected_users) users\033[0m"
     echo ""
     draw_box_title "SERVICE STATUS"
     draw_value_line "XRAY" "$(get_service_status "●" "xray.service")"
@@ -157,12 +246,15 @@ show_menu() {
     draw_value_line "Fail2Ban" "$(get_service_status "●" "fail2ban.service" "/etc/init.d/fail2ban")"
     draw_value_line "Cron" "$(get_service_status "●" "cron.service" "/etc/init.d/cron")"
     echo ""
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;35m           Powered By: BRAVIN | Made By: BRAVIN    \e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
+    echo -e "\033[1;36m+===================================================+\033[0m"
+    echo -e "\033[1;35m           Powered By: BRAVIN | Made By: BRAVIN    \033[0m"
+    echo -e "\033[1;36m+===================================================+\033[0m"
     echo ""
-    read -p " $(echo -e '\e[1;36m▶\e[0m Select menu: ')" opt
+    read -p " $(echo -e '\033[1;36m▶\033[0m Select menu: ')" opt
     echo ""
+    # FIX #3: replaced recursive `show_menu` calls on invalid input with a
+    # plain fallthrough so the outer `while true` loop redraws instead of
+    # growing the call stack on every mistyped key.
     case $opt in
     1) clear ; m-sshovpn ;;
     2) clear ; m-vmess ;;
@@ -176,7 +268,7 @@ show_menu() {
     10) clear ; /sbin/reboot ;;
     11) exit ;;
     x) exit ;;
-    *) echo "$(echo -e '\e[1;31m✗\e[0m Invalid selection. Press enter to continue...')" ; read -r ; show_menu ;;
+    *) echo -e '\033[1;31m✗\033[0m Invalid selection. Press enter to continue...' ; read -r ;;
     esac
 }
 
