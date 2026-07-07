@@ -54,7 +54,6 @@ get_service_status() {
     echo "$(icon_bad) $label"
 }
 
-# FIX #1: get_cpu_usage was called but never defined. Added here.
 get_cpu_usage() {
     if command -v top >/dev/null 2>&1; then
         cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8"%"}')
@@ -102,25 +101,22 @@ draw_right_mascot() {
     return 0
 }
 
-# STYLE: block-character progress bar for CPU/RAM usage.
-# Purely presentational — takes a percentage in, returns colored bar text out.
 draw_bar() {
-    local percent="$1"       # 0-100
-    local width="${2:-20}"   # bar width in characters
+    local percent="$1"
+    local width="${2:-20}"
     local filled empty bar color
 
-    # clamp to 0-100 in case of odd input
     [ "$percent" -lt 0 ] 2>/dev/null && percent=0
     [ "$percent" -gt 100 ] 2>/dev/null && percent=100
 
     filled=$(( percent * width / 100 ))
     empty=$(( width - filled ))
 
-    color="\033[0;32m"  # green
+    color="\033[0;32m"
     if [ "$percent" -ge 80 ]; then
-        color="\033[0;31m"   # red
+        color="\033[0;31m"
     elif [ "$percent" -ge 50 ]; then
-        color="\033[0;33m"   # yellow
+        color="\033[0;33m"
     fi
 
     bar=""
@@ -134,53 +130,50 @@ draw_bar() {
     printf "${color}%s\033[0m" "$bar"
 }
 
-# FIX #2: network info (IP/ISP/city/country) is now fetched ONCE and cached
-# to a file with a TTL, instead of hitting 4 external APIs on every redraw.
 VPS_INFO_CACHE="/tmp/.vps_info_cache"
-VPS_INFO_TTL=3600  # seconds; refresh once an hour
+VPS_INFO_TTL=3600
 
-# FIX #4: some endpoints (notably ifconfig.co) sit behind Cloudflare and will
-# serve a "Just a moment..." JS-challenge page to requests with no/blank
-# User-Agent instead of the plain-text value we expect. A browser-like UA
-# makes that far less likely.
-_curl_ua=(-s --max-time 3 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
-
-# FIX #5: even with a proper UA, any of these free endpoints can still
-# occasionally rate-limit or challenge us. Rather than trusting the raw
-# response, reject anything that looks like HTML/a challenge page and fall
-# back to a safe placeholder instead of caching/displaying garbage.
 _sanitize_field() {
     local val="$1" fallback="$2"
-    if [ -z "$val" ] || printf '%s' "$val" | grep -qi -e '<html' -e '<!doctype' -e 'cf-chl' -e 'just a moment'; then
+    if [ -z "$val" ] || printf '%s' "$val" | grep -qiE '<html|<!doctype|cf-chl|just a moment|^[0-9]{3}[[:space:]]|not found|undefined|error'; then
         echo "$fallback"
     else
         echo "$val"
     fi
 }
 
+# NOTE: ifconfig.co sits behind a Cloudflare "managed challenge" that
+# requires running real JavaScript — no curl/UA trick can pass it, so we
+# no longer use it. ip-api.com returns ISP+city+country in one plain JSON
+# call and isn't gated behind a JS challenge.
 refresh_vps_info_cache() {
-    local ipvps isp city loc
+    local ipvps json isp city loc
 
-    ipvps=$(curl "${_curl_ua[@]}" ifconfig.me)
-    ipvps=$(_sanitize_field "$ipvps" "Unknown")
+    ipvps=$(curl -s --max-time 5 ifconfig.me)
+    ipvps=$(_sanitize_field "$ipvps" "")
 
-    isp=$(curl "${_curl_ua[@]}" ifconfig.co/org 2>/dev/null)
-    isp=$(_sanitize_field "$isp" "Unknown")
-
-    city=$(curl "${_curl_ua[@]}" "https://ipapi.co/${ipvps}/city" 2>/dev/null)
-    city=$(_sanitize_field "$city" "Unknown")
-
-    if command -v jq >/dev/null 2>&1; then
-        loc=$(curl -sS --max-time 3 -A "Mozilla/5.0" "https://api.country.is/${ipvps}" 2>/dev/null | jq -r '.country' 2>/dev/null)
-    else
-        loc=""
+    json=""
+    if [ -n "$ipvps" ]; then
+        json=$(curl -s --max-time 5 "http://ip-api.com/json/${ipvps}?fields=status,isp,city,countryCode")
     fi
+
+    if command -v jq >/dev/null 2>&1 && [ -n "$json" ]; then
+        isp=$(printf '%s' "$json" | jq -r '.isp // empty' 2>/dev/null)
+        city=$(printf '%s' "$json" | jq -r '.city // empty' 2>/dev/null)
+        loc=$(printf '%s' "$json" | jq -r '.countryCode // empty' 2>/dev/null)
+    else
+        isp=$(printf '%s' "$json" | grep -o '"isp":"[^"]*"' | cut -d'"' -f4)
+        city=$(printf '%s' "$json" | grep -o '"city":"[^"]*"' | cut -d'"' -f4)
+        loc=$(printf '%s' "$json" | grep -o '"countryCode":"[^"]*"' | cut -d'"' -f4)
+    fi
+
+    ipvps=$(_sanitize_field "$ipvps" "Unknown")
+    isp=$(_sanitize_field "$isp" "Unknown")
+    city=$(_sanitize_field "$city" "Unknown")
     loc=$(_sanitize_field "$loc" "Unknown")
-    [ "$loc" = "null" ] && loc="Unknown"
 
     printf '%s\n%s\n%s\n%s\n%s\n' "$ipvps" "$isp" "$city" "$loc" "$(date +%s)" > "$VPS_INFO_CACHE"
 }
-
 load_vps_info_cache() {
     local cache_time now
     if [ -f "$VPS_INFO_CACHE" ]; then
@@ -223,8 +216,6 @@ show_cpu_ram_info() {
     get_ram_info
     get_cpu_usage
 
-    # STYLE: strip trailing % from cpu_usage for bar math, but the
-    # original $cpu_usage value/format is still used as fallback display text.
     local cpu_pct="${cpu_usage%\%}"
     local ram_pct=0
     if [ "$tram" -gt 0 ] 2>/dev/null; then
@@ -276,9 +267,6 @@ show_menu() {
     echo ""
     read -p " $(echo -e '\033[1;36m▶\033[0m Select menu: ')" opt
     echo ""
-    # FIX #3: replaced recursive `show_menu` calls on invalid input with a
-    # plain fallthrough so the outer `while true` loop redraws instead of
-    # growing the call stack on every mistyped key.
     case $opt in
     1) clear ; m-sshovpn ;;
     2) clear ; m-vmess ;;
