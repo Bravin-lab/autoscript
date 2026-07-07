@@ -139,20 +139,44 @@ draw_bar() {
 VPS_INFO_CACHE="/tmp/.vps_info_cache"
 VPS_INFO_TTL=3600  # seconds; refresh once an hour
 
+# FIX #4: some endpoints (notably ifconfig.co) sit behind Cloudflare and will
+# serve a "Just a moment..." JS-challenge page to requests with no/blank
+# User-Agent instead of the plain-text value we expect. A browser-like UA
+# makes that far less likely.
+_curl_ua=(-s --max-time 3 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+
+# FIX #5: even with a proper UA, any of these free endpoints can still
+# occasionally rate-limit or challenge us. Rather than trusting the raw
+# response, reject anything that looks like HTML/a challenge page and fall
+# back to a safe placeholder instead of caching/displaying garbage.
+_sanitize_field() {
+    local val="$1" fallback="$2"
+    if [ -z "$val" ] || printf '%s' "$val" | grep -qi -e '<html' -e '<!doctype' -e 'cf-chl' -e 'just a moment'; then
+        echo "$fallback"
+    else
+        echo "$val"
+    fi
+}
+
 refresh_vps_info_cache() {
     local ipvps isp city loc
-    ipvps=$(curl -s --max-time 3 ifconfig.me)
-    isp=$(curl -s --max-time 3 ifconfig.co/org 2>/dev/null || echo "Unknown")
-    city=$(curl -s --max-time 3 "https://ipapi.co/${ipvps}/city" 2>/dev/null || echo "Unknown")
+
+    ipvps=$(curl "${_curl_ua[@]}" ifconfig.me)
+    ipvps=$(_sanitize_field "$ipvps" "Unknown")
+
+    isp=$(curl "${_curl_ua[@]}" ifconfig.co/org 2>/dev/null)
+    isp=$(_sanitize_field "$isp" "Unknown")
+
+    city=$(curl "${_curl_ua[@]}" "https://ipapi.co/${ipvps}/city" 2>/dev/null)
+    city=$(_sanitize_field "$city" "Unknown")
 
     if command -v jq >/dev/null 2>&1; then
-        loc=$(curl -sS --max-time 3 "https://api.country.is/${ipvps}" | jq -r '.country' 2>/dev/null)
+        loc=$(curl -sS --max-time 3 -A "Mozilla/5.0" "https://api.country.is/${ipvps}" 2>/dev/null | jq -r '.country' 2>/dev/null)
     else
         loc=""
     fi
-    if [ -z "$loc" ] || [ "$loc" = "null" ]; then
-        loc="Unknown"
-    fi
+    loc=$(_sanitize_field "$loc" "Unknown")
+    [ "$loc" = "null" ] && loc="Unknown"
 
     printf '%s\n%s\n%s\n%s\n%s\n' "$ipvps" "$isp" "$city" "$loc" "$(date +%s)" > "$VPS_INFO_CACHE"
 }
