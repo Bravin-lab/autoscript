@@ -60,77 +60,61 @@ get_ram_info() {
     uram=$(echo "$ram_info" | awk '{print $2}')
 }
 
-get_cpu_usage() {
-    cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
-    cpu_usage=$(echo "$cpu_usage" | awk '{printf "%.2f", $1}')
-    cpu_usage+=" %"
+draw_box_title() {
+    local title="$1"
+    local inner_width=47
+    local title_len=${#title}
+    local left_pad=0
+    local right_pad=0
+
+    if [ "$title_len" -lt "$inner_width" ]; then
+        left_pad=$(((inner_width - title_len) / 2))
+        right_pad=$((inner_width - title_len - left_pad))
+    fi
+
+    printf '\e[1;36m╔═════════════════════════════════════════════════╗\e[0m\n'
+    printf '\e[1;36m║\e[1;33m%*s%s%*s\e[0m\e[1;36m║\e[0m\n' "$left_pad" "" "$title" "$right_pad" ""
+    printf '\e[1;36m╚═════════════════════════════════════════════════╝\e[0m\n'
+}
+
+draw_value_line() {
+    local label="$1"
+    local value="$2"
+    printf '\e[1;32m  %-13s\e[0m: %b\n' "$label" "$value"
+}
+
+draw_menu_row() {
+    local left="$1"
+    local right="$2"
+    printf '\e[1;36m  %-26s %-26s\e[0m\n' "$left" "$right"
 }
 
 draw_right_mascot() {
-    local start_row="$1"
-    local cols
-    local mascot_width=31
-    local min_cols=96
-    local start_col
-    local i=0
-
-    cols=$(tput cols 2>/dev/null || echo 80)
-    if [ -z "$cols" ] || [ "$cols" -lt "$min_cols" ]; then
-        return 0
-    fi
-
-    start_col=$((cols - mascot_width - 1))
-    [ "$start_col" -lt 56 ] && return 0
-
-    printf '\e[s'
-    while IFS= read -r line; do
-        printf '\e[%s;%sH\e[1;35m%s\e[0m' "$((start_row + i))" "$start_col" "$line"
-        i=$((i + 1))
-    done << 'EOF'
-            .-"""-.
-           '       \
-          |,.  ,-.  |
-          |()L( ()| |
-          |,'  `".| |
-          |.___.',| `
-         .j `--"' `  `.
-        / '        '   \
-       / /          `   `.
-      / /            `    .
-     / /              l   |
-    . ,               |   |
-    ,"`.             .|   |
- _.'   ``.          | `..-'l
-|       `.`,        |      `.
-|         `.    __.j         )
-|__        |--""___|      ,-'
-   `"--...,+""""   `._,.-' mh
-EOF
-    printf '\e[u'
+    return 0
 }
 
 show_vps_info() {
     clear
     domain=$(cat /etc/xray/domain 2>/dev/null || echo "Unknown")
     uptime=$(uptime -p | cut -d " " -f 2-10)
-    DATE2=$(date -R | cut -d " " -f -5)
+    DATE2=$(date +%d/%m/%Y)
+    TIME2=$(date +%H:%M:%S)
     IPVPS=$(curl -s ifconfig.me)
+    ISP=$(curl -s ifconfig.co/org 2>/dev/null || echo "Unknown")
+    CITY=$(curl -s "https://ipapi.co/${IPVPS}/city" 2>/dev/null || echo "Unknown")
     LOC=$(curl -sS "https://api.country.is/${IPVPS}" | jq -r '.country' 2>/dev/null)
     if [ -z "$LOC" ] || [ "$LOC" = "null" ]; then
         LOC="Unknown"
     fi
 
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;36m║\e[1;33m         AUTOSCRIPT KINGS                         \e[0m\e[1;36m║\e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
-    draw_right_mascot 3
+    draw_box_title "AUTOSCRIPT KINGS"
     echo ""
-    echo -e "\e[1;32m  OS            \e[0m: $(hostnamectl | grep "Operating System" | cut -d ' ' -f5-)"
-    echo -e "\e[1;32m  Uptime        \e[0m: $uptime"
-    echo -e "\e[1;32m  Public IP     \e[0m: $IPVPS"
-    echo -e "\e[1;32m  Country       \e[0m: $LOC"
-    echo -e "\e[1;32m  Domain        \e[0m: $domain"
-    echo -e "\e[1;32m  Date & Time   \e[0m: $DATE2"
+    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
+    draw_value_line "ISP" "$ISP"
+    draw_value_line "CITY" "$CITY"
+    draw_value_line "DATE" "$DATE2"
+    draw_value_line "TIME" "$TIME2"
+    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
     echo ""
 }
 
@@ -138,11 +122,9 @@ show_cpu_ram_info() {
     get_ram_info
     get_cpu_usage
 
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;36m║\e[1;33m               SYSTEM RESOURCES               \e[0m\e[1;36m║\e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
-    echo -e "\e[1;32m  CPU Usage   \e[0m: $cpu_usage"
-    echo -e "\e[1;32m  RAM Used    \e[0m: ${uram} MB / ${tram} MB"
+    draw_box_title "SYSTEM RESOURCES"
+    draw_value_line "CPU Usage" "$cpu_usage"
+    draw_value_line "RAM Used" "${uram} MB / ${tram} MB"
     echo ""
 }
 
@@ -151,37 +133,29 @@ show_menu() {
     show_vps_info
     show_cpu_ram_info
 
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;36m║\e[1;33m               PROTOCOL MANAGEMENT            \e[0m\e[1;36m║\e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
-    echo -e "\e[1;36m  [1] Menu SSH           [4] Menu Trojan\e[0m"
-    echo -e "\e[1;36m  [2] Menu Vmess         [5] Menu Shadowsocks\e[0m"
-    echo -e "\e[1;36m  [3] Menu Vless         [6] Menu UDP\e[0m"
+    draw_box_title "PROTOCOL MANAGEMENT"
+    draw_menu_row "[1] Menu SSH" "[4] Menu Trojan"
+    draw_menu_row "[2] Menu Vmess" "[5] Menu Shadowsocks"
+    draw_menu_row "[3] Menu Vless" "[6] Menu UDP"
     echo ""
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;36m║\e[1;33m               SYSTEM & UTILITIES              \e[0m\e[1;36m║\e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
-    echo -e "\e[1;36m  [7] System Menu        [9] Clear RAM Cache\e[0m"
-    echo -e "\e[1;36m  [8] Status Service     [10] Reboot VPS\e[0m"
-    echo -e "\e[1;36m  [11] Exit\e[0m"
+    draw_box_title "SYSTEM & UTILITIES"
+    draw_menu_row "[7] System Menu" "[9] Clear RAM Cache"
+    draw_menu_row "[8] Status Service" "[10] Reboot VPS"
+    printf '\e[1;36m  [11] Exit\e[0m\n'
     echo ""
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;36m║\e[1;33m                ACCOUNT DETAILS               \e[0m\e[1;36m║\e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
-    echo -e "\e[1;32m  Client Name \e[0m: \e[1;33m$Name\e[0m"
-    echo -e "\e[1;32m  Expired     \e[0m: \e[1;33m$Exp2\e[0m"
-    echo -e "\e[1;32m  Connected   \e[0m: \e[1;33m$(get_connected_users) users\e[0m"
+    draw_box_title "ACCOUNT DETAILS"
+    draw_value_line "Client Name" "\e[1;33m$Name\e[0m"
+    draw_value_line "Expired" "\e[1;33m$Exp2\e[0m"
+    draw_value_line "Connected" "\e[1;33m$(get_connected_users) users\e[0m"
     echo ""
-    echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
-    echo -e "\e[1;36m║\e[1;33m               SERVICE STATUS                \e[0m\e[1;36m║\e[0m"
-    echo -e "\e[1;36m╚═════════════════════════════════════════════════╝\e[0m"
-    echo -e "\e[1;32m  XRAY       \e[0m: $(get_service_status "●" "xray.service")"
-    echo -e "\e[1;32m  Dropbear   \e[0m: $(get_service_status "●" "dropbear.service" "/etc/init.d/dropbear")"
-    echo -e "\e[1;32m  WS Stunnel \e[0m: $(get_service_status "●" "ws-stunnel.service")"
-    echo -e "\e[1;32m  WS Dropbear\e[0m: $(get_service_status "●" "ws-dropbear.service")"
-    echo -e "\e[1;32m  UDP Custom \e[0m: $(get_service_status "●" "udp-custom.service")"
-    echo -e "\e[1;32m  Fail2Ban   \e[0m: $(get_service_status "●" "fail2ban.service" "/etc/init.d/fail2ban")"
-    echo -e "\e[1;32m  Cron       \e[0m: $(get_service_status "●" "cron.service" "/etc/init.d/cron")"
+    draw_box_title "SERVICE STATUS"
+    draw_value_line "XRAY" "$(get_service_status "●" "xray.service")"
+    draw_value_line "Dropbear" "$(get_service_status "●" "dropbear.service" "/etc/init.d/dropbear")"
+    draw_value_line "WS Stunnel" "$(get_service_status "●" "ws-stunnel.service")"
+    draw_value_line "WS Dropbear" "$(get_service_status "●" "ws-dropbear.service")"
+    draw_value_line "UDP Custom" "$(get_service_status "●" "udp-custom.service")"
+    draw_value_line "Fail2Ban" "$(get_service_status "●" "fail2ban.service" "/etc/init.d/fail2ban")"
+    draw_value_line "Cron" "$(get_service_status "●" "cron.service" "/etc/init.d/cron")"
     echo ""
     echo -e "\e[1;36m╔═════════════════════════════════════════════════╗\e[0m"
     echo -e "\e[1;35m           Powered By: BRAVIN | Made By: BRAVIN    \e[0m"
